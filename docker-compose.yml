@@ -1,0 +1,42 @@
+version: '3.9'
+
+services:
+  # Service PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: autoconnect_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: db_autoconnect
+      POSTGRES_USER: autoconnect_user
+      POSTGRES_PASSWORD: autoconnect
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - autoconnect_network
+
+  # Service Redis (pour Celery - tâches asynchrones)
+  redis:
+    image: redis:7-alpine
+    container_name: autoconnect_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - autoconnect_network
+
+# Volumes pour persister les données
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+# Réseau pour que les conteneurs communiquent
+networks:
+  autoconnect_network:
+    driver: bridge
