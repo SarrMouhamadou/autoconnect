@@ -196,3 +196,13 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+# ========================================
+# MODÈLE UTILISATEUR PERSONNALISÉ
+# ========================================
+
+# Utiliser Client comme modèle d'authentification par défaut
+# Note: On utilise Client car c'est le type d'utilisateur le plus courant
+# Les autres types (Concessionnaire, Admin) sont gérés via le champ 'role'
+
+AUTH_USER_MODEL = 'users.User'

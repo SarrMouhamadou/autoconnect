@@ -1,0 +1,92 @@
+[
+  {
+    "model": "users.role",
+    "pk": 1,
+    "fields": {
+      "nom": "CLIENT",
+      "description": "Client standard pouvant consulter et réserver des véhicules",
+      "peut_gerer_vehicules": false,
+      "peut_gerer_concessions": false,
+      "peut_gerer_utilisateurs": false,
+      "peut_voir_statistiques": false,
+      "peut_moderer_contenu": false,
+      "date_creation": "2024-01-01T00:00:00Z",
+      "date_modification": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.role",
+    "pk": 2,
+    "fields": {
+      "nom": "CONCESSIONNAIRE_PROPRIETAIRE",
+      "description": "Propriétaire d'une ou plusieurs concessions avec tous les droits",
+      "peut_gerer_vehicules": true,
+      "peut_gerer_concessions": true,
+      "peut_gerer_utilisateurs": true,
+      "peut_voir_statistiques": true,
+      "peut_moderer_contenu": false,
+      "date_creation": "2024-01-01T00:00:00Z",
+      "date_modification": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.role",
+    "pk": 3,
+    "fields": {
+      "nom": "CONCESSIONNAIRE_GERANT",
+      "description": "Gérant d'une concession avec droits de gestion",
+      "peut_gerer_vehicules": true,
+      "peut_gerer_concessions": false,
+      "peut_gerer_utilisateurs": true,
+      "peut_voir_statistiques": true,
+      "peut_moderer_contenu": false,
+      "date_creation": "2024-01-01T00:00:00Z",
+      "date_modification": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.role",
+    "pk": 4,
+    "fields": {
+      "nom": "CONCESSIONNAIRE_EMPLOYE",
+      "description": "Employé d'une concession avec droits limités",
+      "peut_gerer_vehicules": true,
+      "peut_gerer_concessions": false,
+      "peut_gerer_utilisateurs": false,
+      "peut_voir_statistiques": false,
+      "peut_moderer_contenu": false,
+      "date_creation": "2024-01-01T00:00:00Z",
+      "date_modification": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.role",
+    "pk": 5,
+    "fields": {
+      "nom": "ADMINISTRATEUR_SUPER",
+      "description": "Super administrateur avec tous les droits sur la plateforme",
+      "peut_gerer_vehicules": true,
+      "peut_gerer_concessions": true,
+      "peut_gerer_utilisateurs": true,
+      "peut_voir_statistiques": true,
+      "peut_moderer_contenu": true,
+      "date_creation": "2024-01-01T00:00:00Z",
+      "date_modification": "2024-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "users.role",
+    "pk": 6,
+    "fields": {
+      "nom": "ADMINISTRATEUR_MODERATEUR",
+      "description": "Modérateur de contenu et support client",
+      "peut_gerer_vehicules": false,
+      "peut_gerer_concessions": false,
+      "peut_gerer_utilisateurs": false,
+      "peut_voir_statistiques": true,
+      "peut_moderer_contenu": true,
+      "date_creation": "2024-01-01T00:00:00Z",
+      "date_modification": "2024-01-01T00:00:00Z"
+    }
+  }
+]
