@@ -1,9 +1,34 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/layout/Layout';
+import ProfileCompletionBanner from '../../components/profile/ProfileCompletionBanner';
+import ProfileProgressBar from '../../components/profile/ProfileProgressBar';
+import authService from '../../services/authService';
 
 export default function ProfilePage() {
     const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
+
+    // État pour la progression
+    const [profileProgress, setProfileProgress] = useState(null);
+    const [loadingProgress, setLoadingProgress] = useState(true);
+
+    // Charger la progression
+    useEffect(() => {
+        const fetchProgress = async () => {
+            try {
+                setLoadingProgress(true);
+                const progress = await authService.getProfileProgress();
+                setProfileProgress(progress);
+            } catch (error) {
+                console.error('Erreur lors du chargement de la progression:', error);
+            } finally {
+                setLoadingProgress(false);
+            }
+        };
+
+        fetchProgress();
+    }, []);
 
     // Format de la date
     const formatDate = (dateString) => {
@@ -26,6 +51,11 @@ export default function ProfilePage() {
                         Gérez vos informations personnelles et paramètres de compte
                     </p>
                 </div>
+
+                {/* Bannière de complétion */}
+                {!loadingProgress && (
+                    <ProfileCompletionBanner user={user} progress={profileProgress} />
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Carte principale */}
@@ -213,7 +243,16 @@ export default function ProfilePage() {
 
                     {/* Sidebar */}
                     <div className="space-y-6">
+                        {/* Barre de progression (si concessionnaire ou client incomplet) */}
+                        {!loadingProgress && profileProgress && user?.pourcentage_completion < 100 && (
+                            <ProfileProgressBar
+                                pourcentage={profileProgress.pourcentage_completion}
+                                etapesManquantes={profileProgress.etapes_manquantes}
+                            />
+                        )}
+
                         {/* Photo de profil */}
+
                         <div className="bg-white rounded-lg shadow-md overflow-hidden">
                             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
                                 <h2 className="text-lg font-semibold text-gray-900">
@@ -242,7 +281,6 @@ export default function ProfilePage() {
                                 </Link>
                             </div>
                         </div>
-
                         {/* Actions rapides */}
                         <div className="bg-white rounded-lg shadow-md overflow-hidden">
                             <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">

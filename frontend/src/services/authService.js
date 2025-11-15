@@ -87,6 +87,18 @@ const authService = {
   },
 
   /**
+   * Récupérer la progression du profil
+   */
+  async getProfileProgress() {
+    try {
+      const response = await api.get('/auth/profile/progress/');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+  
+  /**
    * Mettre à jour le profil
    * @param {Object} userData - Données à mettre à jour
    */

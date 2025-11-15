@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/layout/Layout';
+import ProfileProgressBar from '../../components/profile/ProfileProgressBar';  // ← AJOUTER
+import authService from '../../services/authService';  // Déjà présent normalement
 
 export default function EditProfilePage() {
   const { user, updateProfile, isConcessionnaire } = useAuth();
@@ -27,6 +29,9 @@ export default function EditProfilePage() {
   const [success, setSuccess] = useState(false);
   const [photoFile, setPhotoFile] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
+  // État pour la progression
+  const [profileProgress, setProfileProgress] = useState(null);
+  const [loadingProgress, setLoadingProgress] = useState(true);
 
   // Charger les données utilisateur
   useEffect(() => {
@@ -46,6 +51,23 @@ export default function EditProfilePage() {
       setPhotoPreview(user.photo_profil);
     }
   }, [user]);
+
+  // Charger la progression
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        setLoadingProgress(true);
+        const progress = await authService.getProfileProgress();
+        setProfileProgress(progress);
+      } catch (error) {
+        console.error('Erreur lors du chargement de la progression:', error);
+      } finally {
+        setLoadingProgress(false);
+      }
+    };
+
+    fetchProgress();
+  }, []);
 
   // Gérer les changements dans les inputs
   const handleChange = (e) => {
@@ -184,6 +206,16 @@ export default function EditProfilePage() {
             Mettez à jour vos informations personnelles
           </p>
         </div>
+
+        {/* Barre de progression */}
+        {!loadingProgress && profileProgress && user?.pourcentage_completion < 100 && (
+          <div className="mb-6">
+            <ProfileProgressBar
+              pourcentage={profileProgress.pourcentage_completion}
+              etapesManquantes={profileProgress.etapes_manquantes}
+            />
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Messages de succès/erreur */}

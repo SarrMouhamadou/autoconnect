@@ -1,9 +1,34 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import Layout from '../components/layout/Layout';
+import ProfileCompletionBanner from '../components/profile/ProfileCompletionBanner';  // ← AJOUTER
+import authService from '../services/authService';
 
 export default function DashboardPage() {
   const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
+
+
+  // État pour la progression du profil
+  const [profileProgress, setProfileProgress] = useState(null);
+  const [loadingProgress, setLoadingProgress] = useState(true);
+
+  // Charger la progression au montage
+  useEffect(() => {
+    const fetchProgress = async () => {
+      try {
+        setLoadingProgress(true);
+        const progress = await authService.getProfileProgress();
+        setProfileProgress(progress);
+      } catch (error) {
+        console.error('Erreur lors du chargement de la progression:', error);
+      } finally {
+        setLoadingProgress(false);
+      }
+    };
+
+    fetchProgress();
+  }, []);
 
   // Déterminer le message de bienvenue selon le type
   const getWelcomeMessage = () => {
@@ -28,6 +53,43 @@ export default function DashboardPage() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+
+
+        {/* Bannière de complétion du profil */}
+        {!loadingProgress && (
+          <ProfileCompletionBanner user={user} progress={profileProgress} />
+        )}
+
+        {/* Badge de validation pour concessionnaire validé */}
+        {isConcessionnaire() && user?.statut_compte === 'VALIDE' && (
+          <div className="bg-green-50 border-l-4 border-green-400 p-6 mb-6 rounded-r-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-green-800">
+                  ✅ Votre compte est validé !
+                </h3>
+                <div className="mt-1 text-sm text-green-700">
+                  <p>
+                    Félicitations ! Vous pouvez maintenant ajouter vos véhicules et gérer vos locations.
+                  </p>
+                </div>
+                <div className="mt-3">
+                  <Link
+                    to="/my-vehicles"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none transition"
+                  >
+                    Ajouter mon premier véhicule →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         {/* Carte de bienvenue */}
         <div className="bg-white rounded-lg shadow-xl p-8 mb-8">
           <div className="text-center">
@@ -92,9 +154,9 @@ export default function DashboardPage() {
                 {user?.site_web && (
                   <div>
                     <span className="text-sm font-medium text-gray-500">Site web:</span>
-                    <a 
-                      href={user.site_web} 
-                      target="_blank" 
+                    <a
+                      href={user.site_web}
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:underline"
                     >
@@ -205,7 +267,7 @@ export default function DashboardPage() {
                 Tableau de bord temporaire
               </h4>
               <p className="text-sm text-blue-700">
-                Cette page est une version basique pour tester l'authentification. 
+                Cette page est une version basique pour tester l'authentification.
                 Les fonctionnalités complètes seront ajoutées dans les prochaines phases du projet.
               </p>
             </div>

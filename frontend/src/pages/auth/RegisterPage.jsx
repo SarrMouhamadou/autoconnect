@@ -12,15 +12,7 @@ export default function RegisterPage() {
     password: '',
     password2: '',
     nom: '',
-    prenom: '',
-    telephone: '',
-    adresse: '',
-    ville: '',
-    code_postal: '',
-    // Champs concessionnaire
-    nom_entreprise: '',
-    siret: '',
-    site_web: ''
+    prenom: ''
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -61,24 +53,16 @@ export default function RegisterPage() {
       return;
     }
 
-    // Validation spécifique concessionnaire
-    if (userType === 'CONCESSIONNAIRE') {
-      if (!formData.nom_entreprise || !formData.siret) {
-        setError('Le nom d\'entreprise et le SIRET sont obligatoires pour un concessionnaire');
-        return;
-      }
-      if (formData.siret.length !== 14) {
-        setError('Le SIRET doit contenir exactement 14 chiffres');
-        return;
-      }
-    }
-
     try {
       setLoading(true);
       
-      // Préparer les données
+      // Préparer les données (seulement 5 champs + type)
       const userData = {
-        ...formData,
+        email: formData.email,
+        password: formData.password,
+        password2: formData.password2,
+        nom: formData.nom,
+        prenom: formData.prenom,
         type_utilisateur: userType
       };
 
@@ -95,7 +79,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">
@@ -105,7 +89,7 @@ export default function RegisterPage() {
             Créer un compte
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Rejoignez-nous dès aujourd'hui
+            Inscription rapide en 30 secondes ⚡
           </p>
         </div>
 
@@ -118,14 +102,14 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleUserTypeChange('CLIENT')}
-              className={`p-4 rounded-lg border-2 transition ${
+              className={`p-6 rounded-lg border-2 transition ${
                 userType === 'CLIENT'
                   ? 'border-blue-600 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className="text-center">
-                <div className="text-3xl mb-2">👤</div>
+                <div className="text-4xl mb-2">👤</div>
                 <div className="font-medium text-gray-900">Client</div>
                 <div className="text-sm text-gray-500 mt-1">
                   Je cherche à louer un véhicule
@@ -136,14 +120,14 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={() => handleUserTypeChange('CONCESSIONNAIRE')}
-              className={`p-4 rounded-lg border-2 transition ${
+              className={`p-6 rounded-lg border-2 transition ${
                 userType === 'CONCESSIONNAIRE'
                   ? 'border-blue-600 bg-blue-50'
                   : 'border-gray-200 hover:border-gray-300'
               }`}
             >
               <div className="text-center">
-                <div className="text-3xl mb-2">🏢</div>
+                <div className="text-4xl mb-2">🏢</div>
                 <div className="font-medium text-gray-900">Concessionnaire</div>
                 <div className="text-sm text-gray-500 mt-1">
                   Je propose des véhicules à louer
@@ -153,9 +137,9 @@ export default function RegisterPage() {
           </div>
         </div>
 
-        {/* Formulaire */}
+        {/* Formulaire simplifié */}
         <div className="bg-white rounded-lg shadow-xl p-8">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Affichage des erreurs */}
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -168,246 +152,115 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Informations personnelles */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Informations personnelles
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Nom */}
-                <div>
-                  <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
-                    Nom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="nom"
-                    name="nom"
-                    type="text"
-                    required
-                    value={formData.nom}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Diop"
-                  />
-                </div>
-
-                {/* Prénom */}
-                <div>
-                  <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-2">
-                    Prénom <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="prenom"
-                    name="prenom"
-                    type="text"
-                    required
-                    value={formData.prenom}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Aminata"
-                  />
-                </div>
-
-                {/* Email */}
-                <div className="md:col-span-2">
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Adresse email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="exemple@email.com"
-                  />
-                </div>
-
-                {/* Téléphone */}
-                <div className="md:col-span-2">
-                  <label htmlFor="telephone" className="block text-sm font-medium text-gray-700 mb-2">
-                    Téléphone
-                  </label>
-                  <input
-                    id="telephone"
-                    name="telephone"
-                    type="tel"
-                    value={formData.telephone}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="+221 77 123 45 67"
-                  />
+            {/* Message informatif */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex">
+                <svg className="w-5 h-5 text-blue-600 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="text-sm text-blue-700">
+                  <p className="font-medium mb-1">Inscription rapide</p>
+                  <p>
+                    Vous pourrez compléter votre profil après inscription et accéder immédiatement à votre espace.
+                  </p>
                 </div>
               </div>
             </div>
 
-            {/* Champs spécifiques concessionnaire */}
-            {userType === 'CONCESSIONNAIRE' && (
+            {/* Nom et Prénom */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h3 className="text-lg font-medium text-gray-900 mb-4">
-                  Informations entreprise
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Nom entreprise */}
-                  <div className="md:col-span-2">
-                    <label htmlFor="nom_entreprise" className="block text-sm font-medium text-gray-700 mb-2">
-                      Nom de l'entreprise <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="nom_entreprise"
-                      name="nom_entreprise"
-                      type="text"
-                      required={userType === 'CONCESSIONNAIRE'}
-                      value={formData.nom_entreprise}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                      placeholder="Auto Dakar"
-                    />
-                  </div>
-
-                  {/* SIRET */}
-                  <div>
-                    <label htmlFor="siret" className="block text-sm font-medium text-gray-700 mb-2">
-                      SIRET <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="siret"
-                      name="siret"
-                      type="text"
-                      required={userType === 'CONCESSIONNAIRE'}
-                      value={formData.siret}
-                      onChange={handleChange}
-                      maxLength={14}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                      placeholder="12345678901234"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">14 chiffres</p>
-                  </div>
-
-                  {/* Site web */}
-                  <div>
-                    <label htmlFor="site_web" className="block text-sm font-medium text-gray-700 mb-2">
-                      Site web
-                    </label>
-                    <input
-                      id="site_web"
-                      name="site_web"
-                      type="url"
-                      value={formData.site_web}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                      placeholder="https://www.example.com"
-                    />
-                  </div>
-                </div>
+                <label htmlFor="prenom" className="block text-sm font-medium text-gray-700 mb-2">
+                  Prénom <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="prenom"
+                  name="prenom"
+                  type="text"
+                  required
+                  value={formData.prenom}
+                  onChange={handleChange}
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder="Aminata"
+                />
               </div>
-            )}
 
-            {/* Adresse */}
-            <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Adresse
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-3">
-                  <label htmlFor="adresse" className="block text-sm font-medium text-gray-700 mb-2">
-                    Rue
-                  </label>
-                  <input
-                    id="adresse"
-                    name="adresse"
-                    type="text"
-                    value={formData.adresse}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="123 Avenue Léopold Sédar Senghor"
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label htmlFor="ville" className="block text-sm font-medium text-gray-700 mb-2">
-                    Ville
-                  </label>
-                  <input
-                    id="ville"
-                    name="ville"
-                    type="text"
-                    value={formData.ville}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="Dakar"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="code_postal" className="block text-sm font-medium text-gray-700 mb-2">
-                    Code postal
-                  </label>
-                  <input
-                    id="code_postal"
-                    name="code_postal"
-                    type="text"
-                    value={formData.code_postal}
-                    onChange={handleChange}
-                    className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="10000"
-                  />
-                </div>
+              <div>
+                <label htmlFor="nom" className="block text-sm font-medium text-gray-700 mb-2">
+                  Nom <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="nom"
+                  name="nom"
+                  type="text"
+                  required
+                  value={formData.nom}
+                  onChange={handleChange}
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder="Diop"
+                />
               </div>
             </div>
 
-            {/* Mot de passe */}
+            {/* Email */}
             <div>
-              <h3 className="text-lg font-medium text-gray-900 mb-4">
-                Sécurité
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Mot de passe */}
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                    Mot de passe <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="password"
-                      name="password"
-                      type={showPassword ? "text" : "password"}
-                      required
-                      value={formData.password}
-                      onChange={handleChange}
-                      className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
-                    >
-                      {showPassword ? '👁️' : '👁️‍🗨️'}
-                    </button>
-                  </div>
-                  <p className="mt-1 text-xs text-gray-500">Minimum 8 caractères</p>
-                </div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                Adresse email <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                placeholder="exemple@email.com"
+              />
+            </div>
 
-                {/* Confirmation mot de passe */}
-                <div>
-                  <label htmlFor="password2" className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirmer le mot de passe <span className="text-red-500">*</span>
-                  </label>
+            {/* Mots de passe */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                  Mot de passe <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
                   <input
-                    id="password2"
-                    name="password2"
+                    id="password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
                     required
-                    value={formData.password2}
+                    value={formData.password}
                     onChange={handleChange}
                     className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                    placeholder="••••••••"
+                    placeholder="Minimum 8 caractères"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
+                  >
+                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                  </button>
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="password2" className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirmer le mot de passe <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="password2"
+                  name="password2"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password2}
+                  onChange={handleChange}
+                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  placeholder="Confirmez le mot de passe"
+                />
               </div>
             </div>
 
@@ -426,7 +279,7 @@ export default function RegisterPage() {
                   Inscription en cours...
                 </>
               ) : (
-                "S'inscrire"
+                "Créer mon compte"
               )}
             </button>
           </form>
