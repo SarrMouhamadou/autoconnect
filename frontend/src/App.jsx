@@ -2,23 +2,35 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
-// Pages
+// Pages publiques
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+
+// Pages protégées
 import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/profile/ProfilePage';
+import EditProfilePage from './pages/profile/EditProfilePage';
+import ChangePasswordPage from './pages/profile/ChangePasswordPage';
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Routes>
-          {/* Routes publiques */}
+          {/* ================================ */}
+          {/* ROUTES PUBLIQUES */}
+          {/* ================================ */}
+          
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Routes protégées */}
+          {/* ================================ */}
+          {/* ROUTES PROTÉGÉES */}
+          {/* ================================ */}
+
+          {/* Dashboard */}
           <Route 
             path="/dashboard" 
             element={
@@ -28,7 +40,90 @@ function App() {
             } 
           />
 
-          {/* Route par défaut - rediriger vers home */}
+          {/* Profil */}
+          <Route 
+            path="/profile" 
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/profile/edit" 
+            element={
+              <ProtectedRoute>
+                <EditProfilePage />
+              </ProtectedRoute>
+            } 
+          />
+
+          <Route 
+            path="/profile/change-password" 
+            element={
+              <ProtectedRoute>
+                <ChangePasswordPage />
+              </ProtectedRoute>
+            } 
+          />
+
+          {/* ================================ */}
+          {/* ROUTES FUTURES (Phases 3-7) */}
+          {/* ================================ */}
+
+          {/* Véhicules (Phase 3) - À venir */}
+          {/* 
+          <Route 
+            path="/vehicles" 
+            element={
+              <ProtectedRoute allowedRoles={['CLIENT']}>
+                <VehiclesPage />
+              </ProtectedRoute>
+            } 
+          />
+          */}
+
+          {/* Locations (Phase 4) - À venir */}
+          {/* 
+          <Route 
+            path="/my-rentals" 
+            element={
+              <ProtectedRoute allowedRoles={['CLIENT']}>
+                <MyRentalsPage />
+              </ProtectedRoute>
+            } 
+          />
+          */}
+
+          {/* Concessionnaires (Phase 5) - À venir */}
+          {/* 
+          <Route 
+            path="/my-vehicles" 
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <MyVehiclesPage />
+              </ProtectedRoute>
+            } 
+          />
+          */}
+
+          {/* Admin (Phase 6) - À venir */}
+          {/* 
+          <Route 
+            path="/admin/users" 
+            element={
+              <ProtectedRoute allowedRoles={['ADMINISTRATEUR']}>
+                <AdminUsersPage />
+              </ProtectedRoute>
+            } 
+          />
+          */}
+
+          {/* ================================ */}
+          {/* ROUTE 404 - PAGE NON TROUVÉE */}
+          {/* ================================ */}
+          
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>

@@ -1,21 +1,28 @@
 import axios from 'axios';
+import authService from './authService';
 
-// Instance Axios configurée
+// Créer une instance axios
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api', // URL de base Django
-  timeout: 10000, // Timeout 10 secondes
+  baseURL: 'http://127.0.0.1:8000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Intercepteur pour ajouter le token JWT automatiquement
+// Intercepteur pour ajouter le token à chaque requête
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token');
+    const token = authService.getAccessToken();
+    
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Ne pas écraser Content-Type si c'est FormData
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+    
     return config;
   },
   (error) => {
@@ -23,16 +30,35 @@ api.interceptors.request.use(
   }
 );
 
-// Intercepteur pour gérer les erreurs 401 (non authentifié)
+// Intercepteur pour gérer le refresh token
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    return response;
+  },
   async (error) => {
-    if (error.response?.status === 401) {
-      // Token expiré, rediriger vers login
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      window.location.href = '/login';
+    const originalRequest = error.config;
+
+    // Si erreur 401 et pas déjà tenté de refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Tenter de rafraîchir le token
+        const newAccessToken = await authService.refreshToken();
+        
+        // Mettre à jour le header avec le nouveau token
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+        
+        // Retenter la requête originale
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Si le refresh échoue, déconnecter l'utilisateur
+        authService.clearTokens();
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
     }
+
     return Promise.reject(error);
   }
 );

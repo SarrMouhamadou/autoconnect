@@ -1,14 +1,9 @@
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import Layout from '../components/layout/Layout';
 
 export default function DashboardPage() {
-  const { user, logout, isClient, isConcessionnaire, isAdmin } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
+  const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
 
   // Déterminer le message de bienvenue selon le type
   const getWelcomeMessage = () => {
@@ -31,32 +26,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* Navbar simple */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                🚗 AutoConnect
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-700">
-                {user?.prenom} {user?.nom}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition"
-              >
-                Déconnexion
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Contenu principal */}
+    <Layout>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Carte de bienvenue */}
         <div className="bg-white rounded-lg shadow-xl p-8 mb-8">
@@ -148,24 +118,36 @@ export default function DashboardPage() {
               ⚡ Actions rapides
             </h3>
             <div className="space-y-3">
-              <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+              <Link
+                to="/profile"
+                className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+              >
+                📋 Voir mon profil
+              </Link>
+              <Link
+                to="/profile/edit"
+                className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+              >
                 📝 Modifier mon profil
-              </button>
-              <button className="w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition">
+              </Link>
+              <Link
+                to="/profile/change-password"
+                className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
+              >
                 🔒 Changer mon mot de passe
-              </button>
+              </Link>
               {isClient() && (
                 <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition">
-                  🚗 Rechercher un véhicule
+                  🚗 Rechercher un véhicule (Bientôt)
                 </button>
               )}
               {isConcessionnaire() && (
                 <>
                   <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition">
-                    ➕ Ajouter un véhicule
+                    ➕ Ajouter un véhicule (Bientôt)
                   </button>
                   <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition">
-                    📊 Voir mes statistiques
+                    📊 Voir mes statistiques (Bientôt)
                   </button>
                 </>
               )}
@@ -230,6 +212,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 }

@@ -14,13 +14,13 @@ const authService = {
   async register(userData) {
     try {
       const response = await api.post('/auth/register/', userData);
-      
+
       // Si l'inscription réussit, sauvegarder les tokens
       if (response.data.tokens) {
         this.setTokens(response.data.tokens);
         this.setUser(response.data.user);
       }
-      
+
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -39,13 +39,13 @@ const authService = {
         email,
         password
       });
-      
+
       // Sauvegarder les tokens et les infos utilisateur
       if (response.data.tokens) {
         this.setTokens(response.data.tokens);
         this.setUser(response.data.user);
       }
-      
+
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -58,7 +58,7 @@ const authService = {
   async logout() {
     try {
       const refreshToken = this.getRefreshToken();
-      
+
       if (refreshToken) {
         // Appeler l'API de logout pour blacklister le token
         await api.post('/auth/logout/', {
@@ -92,14 +92,23 @@ const authService = {
    */
   async updateProfile(userData) {
     try {
-      const response = await api.patch('/auth/profile/', userData);
+      // Déterminer si on a un fichier à uploader
+      const hasFile = userData instanceof FormData;
+
+      // Configurer les headers selon le type de données
+      const config = hasFile ? {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      } : {};
+
+      const response = await api.patch('/auth/profile/', userData, config);
       this.setUser(response.data.user);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
     }
   },
-
   /**
    * Changer le mot de passe
    */
@@ -122,18 +131,18 @@ const authService = {
   async refreshToken() {
     try {
       const refreshToken = this.getRefreshToken();
-      
+
       if (!refreshToken) {
         throw new Error('Aucun refresh token disponible');
       }
-      
+
       const response = await api.post('/auth/token/refresh/', {
         refresh: refreshToken
       });
-      
+
       // Mettre à jour uniquement l'access token
       this.setAccessToken(response.data.access);
-      
+
       return response.data.access;
     } catch (error) {
       // Si le refresh échoue, déconnecter l'utilisateur
@@ -245,11 +254,11 @@ const authService = {
   handleError(error) {
     if (error.response) {
       // Le serveur a répondu avec un code d'erreur
-      const message = error.response.data.detail || 
-                     error.response.data.message || 
-                     this.formatErrors(error.response.data) ||
-                     'Une erreur est survenue';
-      
+      const message = error.response.data.detail ||
+        error.response.data.message ||
+        this.formatErrors(error.response.data) ||
+        'Une erreur est survenue';
+
       return {
         message,
         status: error.response.status,
@@ -277,7 +286,7 @@ const authService = {
     if (typeof errors === 'string') {
       return errors;
     }
-    
+
     if (typeof errors === 'object') {
       const messages = [];
       for (const [field, fieldErrors] of Object.entries(errors)) {
@@ -289,7 +298,7 @@ const authService = {
       }
       return messages.join('\n');
     }
-    
+
     return 'Erreur de validation';
   }
 };
