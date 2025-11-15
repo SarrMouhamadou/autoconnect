@@ -17,6 +17,7 @@ class RoleAdmin(admin.ModelAdmin):
         'peut_gerer_vehicules', 'peut_gerer_concessions',
         'peut_gerer_utilisateurs', 'date_creation'
     ]
+
     list_filter = [
         'peut_gerer_vehicules',
         'peut_gerer_concessions',
@@ -58,7 +59,9 @@ class UserAdmin(BaseUserAdmin):
     # Colonnes affichées dans la liste
     list_display = [
         'id', 'email', 'get_full_name_display', 'type_utilisateur',
-        'role', 'is_active', 'is_verified', 'get_validation_status',
+        'role', 'is_active', 'is_verified', 
+        'get_profile_completion',  
+        'get_validation_status',
         'date_inscription'
     ]
     
@@ -85,14 +88,16 @@ class UserAdmin(BaseUserAdmin):
     def get_validation_status(self, obj):
         """Afficher le statut de validation avec couleur."""
         if obj.type_utilisateur == 'CONCESSIONNAIRE':
-            if obj.est_valide:
-                return format_html(
-                    '<span style="color: green; font-weight: bold;">✅ Validé</span>'
-                )
-            else:
-                return format_html(
-                    '<span style="color: orange; font-weight: bold;">⏳ En attente</span>'
-                )
+            statut_display = {
+                'INCOMPLETE': ('<span style="color: gray;">⚪ Incomplet</span>', 'gray'),
+                'EN_ATTENTE_VALIDATION': ('<span style="color: orange;">⏳ En attente</span>', 'orange'),
+                'VALIDE': ('<span style="color: green;">✅ Validé</span>', 'green'),
+                'REJETE': ('<span style="color: red;">❌ Rejeté</span>', 'red'),
+            }
+            
+            display, color = statut_display.get(obj.statut_compte, ('N/A', 'gray'))
+            return format_html(display)
+        
         return format_html('<span style="color: gray;">N/A</span>')
     get_validation_status.short_description = 'Validation'
     
@@ -115,7 +120,8 @@ class UserAdmin(BaseUserAdmin):
             'fields': (
                 'nom_entreprise', 'siret', 'site_web',
                 'logo_entreprise', 'description_entreprise',
-                'est_valide', 'date_validation'
+                'est_valide', 'date_validation',
+                'statut_compte', 'pourcentage_completion', 'raison_rejet'  # ← AJOUTER
             ),
             'classes': ('collapse',)
         }),
@@ -194,3 +200,25 @@ class UserAdmin(BaseUserAdmin):
             f'{count} utilisateur(s) désactivé(s) avec succès.'
         )
     desactiver_utilisateurs.short_description = "❌ Désactiver les utilisateurs sélectionnés"
+
+    def get_profile_completion(self, obj):
+        """Afficher le pourcentage de complétion avec barre."""
+        pourcentage = obj.pourcentage_completion
+        
+        # Couleur selon le pourcentage
+        if pourcentage < 40:
+            color = 'red'
+        elif pourcentage < 70:
+            color = 'orange'
+        else:
+            color = 'green'
+        
+        return format_html(
+            '<div style="width: 100px; background: #f0f0f0; border-radius: 4px; overflow: hidden;">'
+            '<div style="width: {}%; background: {}; color: white; text-align: center; padding: 2px; font-size: 11px; font-weight: bold;">'
+            '{}%'
+            '</div>'
+            '</div>',
+            pourcentage, color, pourcentage
+        )
+    get_profile_completion.short_description = 'Profil'

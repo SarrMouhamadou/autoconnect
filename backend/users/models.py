@@ -255,6 +255,37 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     
     # ========================================
+    # NOUVEAU : SYSTÈME DE PROGRESSION DU PROFIL
+    # ========================================
+    
+    STATUT_COMPTE_CHOICES = [
+        ('INCOMPLETE', 'Profil incomplet'),
+        ('EN_ATTENTE_VALIDATION', 'En attente de validation'),
+        ('VALIDE', 'Validé'),
+        ('REJETE', 'Rejeté'),
+    ]
+    
+    statut_compte = models.CharField(
+        max_length=50,
+        choices=STATUT_COMPTE_CHOICES,
+        default='INCOMPLETE',
+        verbose_name="Statut du compte"
+    )
+    
+    pourcentage_completion = models.IntegerField(
+        default=0,
+        verbose_name="Pourcentage de complétion du profil",
+        help_text="Calculé automatiquement selon les champs remplis"
+    )
+    
+    raison_rejet = models.TextField(
+        blank=True,
+        verbose_name="Raison du rejet",
+        help_text="Raison pour laquelle le compte a été rejeté par l'administrateur"
+    )
+
+
+    # ========================================
     # CHAMPS SPÉCIFIQUES ADMINISTRATEUR
     # ========================================
     
@@ -307,6 +338,172 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_administrateur(self):
         """Vérifie si l'utilisateur est un administrateur."""
         return self.type_utilisateur == 'ADMINISTRATEUR'
+    
+
+    # ========================================
+    # MÉTHODES DE CALCUL DE PROGRESSION
+    # ========================================
+    
+    def calculer_completion_client(self):
+        """Calculer le pourcentage de complétion pour un client."""
+        total_points = 6
+        points = 0
+        
+        # Champs de base (toujours remplis à l'inscription)
+        if self.email and self.nom and self.prenom:
+            points += 3  # 50%
+        
+        # Champs optionnels
+        if self.telephone:
+            points += 1
+        if self.adresse and self.ville:
+            points += 1
+        if self.photo_profil:
+            points += 1
+        
+        return int((points / total_points) * 100)
+    
+    def calculer_completion_concessionnaire(self):
+        """Calculer le pourcentage de complétion pour un concessionnaire."""
+        total_points = 10
+        points = 0
+        
+        # Informations de base (20%)
+        if self.email and self.nom and self.prenom:
+            points += 2
+        
+        # Informations personnelles (20%)
+        if self.telephone:
+            points += 1
+        if self.adresse and self.ville:
+            points += 1
+        
+        # Informations entreprise (40%)
+        if self.nom_entreprise:
+            points += 2
+        if self.siret:
+            points += 2
+        
+        # Documents/Logo (20%)
+        if self.logo_entreprise:
+            points += 1
+        if self.description_entreprise:
+            points += 1
+        
+        return int((points / total_points) * 100)
+    
+    def calculer_completion(self):
+        """Calculer le pourcentage de complétion selon le type d'utilisateur."""
+        if self.type_utilisateur == 'CLIENT':
+            return self.calculer_completion_client()
+        elif self.type_utilisateur == 'CONCESSIONNAIRE':
+            return self.calculer_completion_concessionnaire()
+        else:
+            return 100  # Admin toujours à 100%
+    
+    def mettre_a_jour_statut(self):
+        """Mettre à jour automatiquement le statut du compte."""
+        if self.type_utilisateur == 'CLIENT':
+            # Les clients n'ont pas besoin de validation
+            self.statut_compte = 'VALIDE'
+        
+        elif self.type_utilisateur == 'CONCESSIONNAIRE':
+            pourcentage = self.calculer_completion()
+            
+            if pourcentage < 70:
+                # Profil incomplet
+                self.statut_compte = 'INCOMPLETE'
+            elif pourcentage >= 70 and not self.est_valide:
+                # Profil complet mais pas validé
+                self.statut_compte = 'EN_ATTENTE_VALIDATION'
+            elif self.est_valide:
+                # Validé par l'admin
+                self.statut_compte = 'VALIDE'
+        
+        else:  # ADMINISTRATEUR
+            self.statut_compte = 'VALIDE'
+    
+    def save(self, *args, **kwargs):
+        """Surcharge de save pour mettre à jour automatiquement la progression."""
+        # Calculer le pourcentage de complétion
+        self.pourcentage_completion = self.calculer_completion()
+        
+        # Mettre à jour le statut
+        self.mettre_a_jour_statut()
+        
+        # Sauvegarder
+        super().save(*args, **kwargs)
+    
+    def get_etapes_manquantes(self):
+        """Retourner la liste des étapes manquantes pour compléter le profil."""
+        etapes = []
+        
+        if self.type_utilisateur == 'CONCESSIONNAIRE':
+            if not self.telephone:
+                etapes.append({
+                    'titre': 'Ajouter votre téléphone',
+                    'importance': 'Moyenne',
+                    'points': '+10%'
+                })
+            
+            if not (self.adresse and self.ville):
+                etapes.append({
+                    'titre': 'Compléter votre adresse',
+                    'importance': 'Moyenne',
+                    'points': '+10%'
+                })
+            
+            if not self.nom_entreprise:
+                etapes.append({
+                    'titre': 'Ajouter le nom de votre entreprise',
+                    'importance': 'Haute',
+                    'points': '+20%'
+                })
+            
+            if not self.siret:
+                etapes.append({
+                    'titre': 'Ajouter votre numéro SIRET',
+                    'importance': 'Haute',
+                    'points': '+20%'
+                })
+            
+            if not self.logo_entreprise:
+                etapes.append({
+                    'titre': 'Ajouter le logo de votre entreprise',
+                    'importance': 'Basse',
+                    'points': '+10%'
+                })
+            
+            if not self.description_entreprise:
+                etapes.append({
+                    'titre': 'Ajouter une description de votre entreprise',
+                    'importance': 'Basse',
+                    'points': '+10%'
+                })
+        
+        elif self.type_utilisateur == 'CLIENT':
+            if not self.telephone:
+                etapes.append({
+                    'titre': 'Ajouter votre téléphone',
+                    'importance': 'Moyenne',
+                    'points': '+17%'
+                })
+            
+            if not (self.adresse and self.ville):
+                etapes.append({
+                    'titre': 'Compléter votre adresse',
+                    'importance': 'Moyenne',
+                    'points': '+17%'
+                })
+            
+            if not self.photo_profil:
+                etapes.append({
+                    'titre': 'Ajouter une photo de profil',
+                    'importance': 'Basse',
+                    'points': '+16%'
+                })
+        
+        return etapes
     
     class Meta:
         verbose_name = "Utilisateur"

@@ -38,11 +38,13 @@ class UserSerializer(serializers.ModelSerializer):
             'date_inscription', 'derniere_connexion',
             # Champs spécifiques selon le type
             'nom_entreprise', 'siret', 'site_web', 'logo_entreprise',
-            'est_valide', 'niveau_acces'
+            'est_valide', 'niveau_acces',
+            # NOUVEAU : Progression profil
+            'statut_compte', 'pourcentage_completion', 'raison_rejet'
         ]
         read_only_fields = [
             'id', 'date_inscription', 'derniere_connexion', 
-            'est_valide'  # Seul l'admin peut valider
+            'est_valide', 'statut_compte', 'pourcentage_completion'
         ]
     
     def to_representation(self, instance):
@@ -75,15 +77,39 @@ class UserSerializer(serializers.ModelSerializer):
         
         return data
 
-
 # ========================================
-# SERIALIZER INSCRIPTION (Register)
+# SERIALIZER PROGRESSION PROFIL
+# ========================================
+
+class ProfileProgressSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour afficher la progression du profil.
+    """
+    
+    etapes_manquantes = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = User
+        fields = [
+            'pourcentage_completion',
+            'statut_compte',
+            'etapes_manquantes',
+            'raison_rejet'
+        ]
+    
+    def get_etapes_manquantes(self, obj):
+        """Retourner les étapes manquantes."""
+        return obj.get_etapes_manquantes()
+# ========================================
+# SERIALIZER INSCRIPTION (Register) - SIMPLIFIÉ
 # ========================================
 
 class RegisterSerializer(serializers.ModelSerializer):
     """
     Serializer pour l'inscription d'un nouvel utilisateur.
     POST /api/auth/register/
+    
+    NOUVEAU : Inscription simplifiée - seulement 5 champs requis
     """
     
     password = serializers.CharField(
@@ -98,16 +124,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         style={'input_type': 'password'},
         label="Confirmation mot de passe"
     )
-    role_id = serializers.IntegerField(write_only=True, required=False)
     
     class Meta:
         model = User
         fields = [
-            'email', 'password', 'password2', 'nom', 'prenom',
-            'telephone', 'adresse', 'ville', 'code_postal',
-            'type_utilisateur', 'role_id',
-            # Champs spécifiques concessionnaire
-            'nom_entreprise', 'siret', 'site_web'
+            'email', 'password', 'password2', 
+            'nom', 'prenom', 'type_utilisateur'
         ]
     
     def validate(self, attrs):
@@ -119,21 +141,8 @@ class RegisterSerializer(serializers.ModelSerializer):
                 "password": "Les mots de passe ne correspondent pas."
             })
         
-        # Vérifier le type d'utilisateur
-        type_user = attrs.get('type_utilisateur', 'CLIENT')
-        
-        # Si concessionnaire, SIRET obligatoire
-        if type_user == 'CONCESSIONNAIRE':
-            if not attrs.get('nom_entreprise'):
-                raise serializers.ValidationError({
-                    "nom_entreprise": "Le nom de l'entreprise est obligatoire pour un concessionnaire."
-                })
-            if not attrs.get('siret'):
-                raise serializers.ValidationError({
-                    "siret": "Le SIRET est obligatoire pour un concessionnaire."
-                })
-        
         # On ne peut pas s'inscrire comme ADMINISTRATEUR via l'API
+        type_user = attrs.get('type_utilisateur', 'CLIENT')
         if type_user == 'ADMINISTRATEUR':
             raise serializers.ValidationError({
                 "type_utilisateur": "Vous ne pouvez pas vous inscrire comme administrateur."
@@ -144,26 +153,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Créer l'utilisateur."""
         
-        # Retirer password2 et role_id
+        # Retirer password2
         validated_data.pop('password2')
-        role_id = validated_data.pop('role_id', None)
         password = validated_data.pop('password')
         
         # Déterminer le rôle par défaut selon le type
         type_user = validated_data.get('type_utilisateur', 'CLIENT')
         
-        if not role_id:
-            if type_user == 'CLIENT':
-                role = Role.objects.get(nom='CLIENT')
-            elif type_user == 'CONCESSIONNAIRE':
-                role = Role.objects.get(nom='CONCESSIONNAIRE_PROPRIETAIRE')
-            else:
-                raise serializers.ValidationError("Type d'utilisateur invalide")
+        if type_user == 'CLIENT':
+            role = Role.objects.get(nom='CLIENT')
+        elif type_user == 'CONCESSIONNAIRE':
+            role = Role.objects.get(nom='CONCESSIONNAIRE_PROPRIETAIRE')
         else:
-            try:
-                role = Role.objects.get(id=role_id)
-            except Role.DoesNotExist:
-                raise serializers.ValidationError(f"Le rôle avec l'ID {role_id} n'existe pas")
+            raise serializers.ValidationError("Type d'utilisateur invalide")
         
         # Créer l'utilisateur
         user = User.objects.create_user(
@@ -172,8 +174,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             **validated_data
         )
         
+        # Le pourcentage et statut sont calculés automatiquement dans save()
+        
         return user
-
 
 # ========================================
 # SERIALIZER CONNEXION (Login)
@@ -218,12 +221,12 @@ class LoginSerializer(serializers.Serializer):
                     code='authorization'
                 )
             
-            # Si c'est un concessionnaire, vérifier la validation
+            '''# Si c'est un concessionnaire, vérifier la validation
             if user.type_utilisateur == 'CONCESSIONNAIRE' and not user.est_valide:
                 raise serializers.ValidationError(
                     "Votre compte concessionnaire est en attente de validation par un administrateur.",
                     code='authorization'
-                )
+                )'''
         
         else:
             raise serializers.ValidationError(

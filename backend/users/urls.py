@@ -5,7 +5,8 @@ from .views import (
     LoginView,
     LogoutView,
     UserProfileView,
-    ChangePasswordView
+    ChangePasswordView,
+    ProfileProgressView
 )
 
 app_name = 'users'
@@ -22,4 +23,7 @@ urlpatterns = [
     
     # Refresh token JWT
     path('token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+
+    # Progression du profil
+    path('profile/progress/', ProfileProgressView.as_view(), name='profile-progress'),
 ]

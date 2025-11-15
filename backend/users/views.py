@@ -10,7 +10,8 @@ from .serializers import (
     LoginSerializer,
     UserSerializer,
     UserUpdateSerializer,
-    ChangePasswordSerializer
+    ChangePasswordSerializer,
+    ProfileProgressSerializer
 )
 
 
@@ -318,3 +319,38 @@ class LogoutView(APIView):
             return Response({
                 'error': 'Token invalide ou déjà blacklisté'
             }, status=status.HTTP_400_BAD_REQUEST)
+        
+# ========================================
+# API PROGRESSION DU PROFIL
+# ========================================
+
+class ProfileProgressView(APIView):
+    """
+    API pour récupérer la progression du profil.
+    
+    GET /api/auth/profile/progress/
+    
+    Permissions: Authentifié uniquement
+    
+    Response:
+    {
+        "pourcentage_completion": 40,
+        "statut_compte": "INCOMPLETE",
+        "etapes_manquantes": [
+            {
+                "titre": "Ajouter votre numéro SIRET",
+                "importance": "Haute",
+                "points": "+20%"
+            }
+        ],
+        "raison_rejet": ""
+    }
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Récupérer la progression du profil."""
+        user = request.user
+        serializer = ProfileProgressSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
