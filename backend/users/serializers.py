@@ -239,6 +239,10 @@ class LoginSerializer(serializers.Serializer):
 # SERIALIZER MODIFICATION PROFIL
 # ========================================
 
+# ========================================
+# SERIALIZER MODIFICATION PROFIL
+# ========================================
+
 class UserUpdateSerializer(serializers.ModelSerializer):
     """
     Serializer pour modifier le profil utilisateur.
@@ -251,25 +255,46 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             'nom', 'prenom', 'telephone', 'adresse', 
             'ville', 'code_postal', 'photo_profil',
             # Champs spécifiques concessionnaire
-            'nom_entreprise', 'site_web', 'description_entreprise',
+            'site_web', 'description_entreprise',
             'logo_entreprise',
             # Champs spécifiques client
             'newsletter_acceptee', 'preferences_notifications'
         ]
     
-    def validate(self, attrs):
-        """Validation selon le type d'utilisateur."""
-        
+    def get_fields(self):
+        """
+        Personnaliser les champs selon le type d'utilisateur.
+        """
+        fields = super().get_fields()
         user = self.instance
         
-        # Un client ne peut pas modifier les champs concessionnaire
-        if user.type_utilisateur == 'CLIENT':
-            forbidden_fields = ['nom_entreprise', 'site_web', 'description_entreprise']
-            for field in forbidden_fields:
-                if field in attrs:
-                    raise serializers.ValidationError({
-                        field: "Vous ne pouvez pas modifier ce champ."
-                    })
+        if user:
+            # Si c'est un client, supprimer les champs concessionnaire
+            if user.type_utilisateur == 'CLIENT':
+                fields_to_remove = ['site_web', 'description_entreprise', 'logo_entreprise']
+                for field in fields_to_remove:
+                    fields.pop(field, None)
+            
+            # Si c'est un concessionnaire, supprimer les champs client
+            elif user.type_utilisateur == 'CONCESSIONNAIRE':
+                fields_to_remove = ['newsletter_acceptee', 'preferences_notifications']
+                for field in fields_to_remove:
+                    fields.pop(field, None)
+        
+        return fields
+    
+    def validate(self, attrs):
+        """Validation selon le type d'utilisateur."""
+        user = self.instance
+        
+        # Vérifier qu'on ne modifie pas les champs interdits
+        forbidden_fields = ['nom_entreprise', 'siret', 'email', 'type_utilisateur', 'role']
+        
+        for field in forbidden_fields:
+            if field in attrs:
+                raise serializers.ValidationError({
+                    field: "Vous ne pouvez pas modifier ce champ."
+                })
         
         return attrs
 
