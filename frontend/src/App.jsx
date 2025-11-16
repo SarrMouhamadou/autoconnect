@@ -4,8 +4,10 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // Pages publiques
 import HomePage from './pages/HomePage';
+import AuthPage from './pages/auth/AuthPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+
 
 // Pages protégées
 import DashboardPage from './pages/DashboardPage';
@@ -21,51 +23,53 @@ function App() {
           {/* ================================ */}
           {/* ROUTES PUBLIQUES */}
           {/* ================================ */}
-          
+
           <Route path="/" element={<HomePage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/auth" element={<AuthPage />} />  {/* ← NOUVELLE ROUTE */}
+          <Route path="/login" element={<Navigate to="/auth?mode=login" replace />} />  {/* ← Redirection */}
+          <Route path="/register" element={<Navigate to="/auth?mode=signup" replace />} />  {/* ← Redirection */}
+
 
           {/* ================================ */}
           {/* ROUTES PROTÉGÉES */}
           {/* ================================ */}
 
           {/* Dashboard */}
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <DashboardPage />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* Profil */}
-          <Route 
-            path="/profile" 
+          <Route
+            path="/profile"
             element={
               <ProtectedRoute>
                 <ProfilePage />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/profile/edit" 
+          <Route
+            path="/profile/edit"
             element={
               <ProtectedRoute>
                 <EditProfilePage />
               </ProtectedRoute>
-            } 
+            }
           />
 
-          <Route 
-            path="/profile/change-password" 
+          <Route
+            path="/profile/change-password"
             element={
               <ProtectedRoute>
                 <ChangePasswordPage />
               </ProtectedRoute>
-            } 
+            }
           />
 
           {/* ================================ */}
@@ -123,7 +127,7 @@ function App() {
           {/* ================================ */}
           {/* ROUTE 404 - PAGE NON TROUVÉE */}
           {/* ================================ */}
-          
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
