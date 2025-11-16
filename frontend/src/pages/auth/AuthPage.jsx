@@ -28,6 +28,9 @@ export default function AuthPage() {
     const [currentSlide, setCurrentSlide] = useState(0);
     // Carrousel de cartes (pour les superpositions)
     const [currentCard, setCurrentCard] = useState(0);
+    // Direction de l'animation (pour l'effet slide)
+    const [slideDirection, setSlideDirection] = useState('right');
+
     // Fonction pour passer à la carte suivante (clic sur flèche)
     const nextCard = () => {
         setCurrentCard((prev) => (prev + 1) % floatingCards.length);
@@ -127,6 +130,7 @@ export default function AuthPage() {
     };
 
     // Navigation carrousel Sign Up
+    // Navigation carrousel Sign Up avec direction
     const nextStep = () => {
         // Validation selon l'étape
         if (signupStep === 0 && !formData.type_utilisateur) {
@@ -161,11 +165,13 @@ export default function AuthPage() {
         }
 
         setError(null);
+        setSlideDirection('right'); // Animation vers la droite (suivant)
         setSignupStep(prev => Math.min(prev + 1, 4));
     };
 
     const prevStep = () => {
         setError(null);
+        setSlideDirection('left'); // Animation vers la gauche (retour)
         setSignupStep(prev => Math.max(prev - 1, 0));
     };
 
@@ -231,23 +237,23 @@ export default function AuthPage() {
                 {/* ========================================
             GAUCHE - FORMULAIRE
         ======================================== */}
-                <div className="h-full p-5 sm:p-6 lg:p-8 flex flex-col items-center justify-center bg-white overflow-y-auto">
+                <div className="h-full p-4 sm:p-5 lg:p-6 flex flex-col items-center justify-center bg-white overflow-hidden">
                     <div className="w-full max-w-sm">
 
                         {/* Header */}
-                        <div className="mb-6 text-center">
-                            <h1 className="text-2xl font-semibold text-gray-900">AutoConnect</h1>
+                        <div className="mb-4 text-center">
+                            <h1 className="text-xl font-semibold text-gray-900">AutoConnect</h1>
                             <p className="text-xs text-gray-500 mt-1">Drive More. Experience Life.</p>
                         </div>
 
                         {/* Toggle Sign Up / Log In - ESPACÉ */}
-                        <div className="flex items-center justify-center gap-3 mb-8">
+                        <div className="flex items-center justify-center gap-3 mb-5">
                             <button
                                 type="button"
                                 onClick={() => toggleMode('signup')}
                                 className={`px-6 py-1.5 rounded-full border-2 text-sm font-medium transition ${!isLoginMode
-                                    ? 'bg-black text-white border-black shadow-lg'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 bg-white'
+                                        ? 'bg-black text-white border-black shadow-lg'
+                                        : 'border-gray-300 text-gray-700 hover:bg-gray-50 bg-white'
                                     }`}
                             >
                                 Sign Up
@@ -256,8 +262,8 @@ export default function AuthPage() {
                                 type="button"
                                 onClick={() => toggleMode('login')}
                                 className={`px-8 py-1.5 rounded-full text-sm font-medium transition border-2 ${isLoginMode
-                                    ? 'bg-black text-white border-black shadow-lg'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50 bg-white'
+                                        ? 'bg-black text-white border-black shadow-lg'
+                                        : 'border-gray-300 text-gray-700 hover:bg-gray-50 bg-white'
                                     }`}
                             >
                                 Log In
@@ -270,19 +276,19 @@ export default function AuthPage() {
                         {isLoginMode ? (
                             <>
                                 {/* Titre */}
-                                <div className="mb-5 text-center">
-                                    <h2 className="text-xl font-semibold text-gray-900">Journey Begins</h2>
+                                <div className="mb-4 text-center">
+                                    <h2 className="text-lg font-semibold text-gray-900">Journey Begins</h2>
                                     <p className="text-xs text-gray-500 mt-1">Log in with Open account</p>
                                 </div>
 
                                 {/* Social Login Buttons - PLUS PETITS */}
-                                <div className="flex justify-center gap-3 mb-5">
-                                    <button type="button" className="w-[40px] h-[40px] flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+                                <div className="flex justify-center gap-2.5 mb-4">
+                                    <button type="button" className="w-[38px] h-[38px] flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
                                         </svg>
                                     </button>
-                                    <button type="button" className="w-[40px] h-[40px] flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+                                    <button type="button" className="w-[38px] h-[38px] flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
                                         <svg className="w-5 h-5" viewBox="0 0 18 18">
                                             <path d="M17.64 9.20455C17.64 8.56682 17.5827 7.95273 17.4764 7.36364H9V10.845H13.8436C13.635 11.9705 13.0009 12.9232 12.0477 13.5618V15.8195H14.9564C16.6582 14.2527 17.64 11.9455 17.64 9.20455Z" fill="#4285F4" />
                                             <path d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8195L12.0477 13.5618C11.2418 14.1014 10.2109 14.4205 9 14.4205C6.96182 14.4205 5.23818 13.0182 4.50455 11.1873H1.515V13.5059C2.98182 16.2232 5.75091 18 9 18Z" fill="#34A853" />
@@ -290,7 +296,7 @@ export default function AuthPage() {
                                             <path d="M9 4.125C10.3214 4.125 11.5077 4.59545 12.4786 5.52273L15.0218 2.98C13.4618 1.51955 11.4255 0.545455 9 0.545455C5.75091 0.545455 2.98182 2.32273 1.515 5.03955L4.50455 7.35818C5.23818 5.52727 6.96182 4.125 9 4.125Z" fill="#EA4335" />
                                         </svg>
                                     </button>
-                                    <button type="button" className="w-[40px] h-[40px] flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
+                                    <button type="button" className="w-[38px] h-[38px] flex items-center justify-center bg-white border-2 border-gray-200 rounded-xl shadow-sm hover:shadow-md transition hover:-translate-y-0.5">
                                         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
                                             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                                         </svg>
@@ -298,7 +304,7 @@ export default function AuthPage() {
                                 </div>
 
                                 {/* OR Divider */}
-                                <div className="flex items-center my-4">
+                                <div className="flex items-center my-3">
                                     <hr className="w-full border-gray-300" />
                                     <span className="px-3 text-xs font-medium text-gray-400">or</span>
                                     <hr className="w-full border-gray-300" />
@@ -312,7 +318,7 @@ export default function AuthPage() {
                                 )}
 
                                 {/* Formulaire Login - PLUS PETIT */}
-                                <form onSubmit={handleSubmit} className="space-y-3 w-full">
+                                <form onSubmit={handleSubmit} className="space-y-2.5 w-full">
                                     <div className="text-left">
                                         <label className="text-xs font-medium text-gray-600 mb-1 block">Email *</label>
                                         <input
@@ -368,7 +374,7 @@ export default function AuthPage() {
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            className="w-full py-2 px-4 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition shadow-lg disabled:opacity-50"
+                                            className="w-full py-1.5 px-4 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition shadow-lg disabled:opacity-50"
                                         >
                                             {loading ? 'Logging in...' : 'Log In'}
                                         </button>
@@ -378,11 +384,11 @@ export default function AuthPage() {
                         ) : (
                             <>
                                 {/* ========================================
-                    MODE SIGN UP - CARROUSEL
+                    MODE SIGN UP - CARROUSEL AVEC ANIMATIONS
                 ======================================== */}
 
                                 {/* Barre de progression */}
-                                <div className="mb-5">
+                                <div className="mb-4">
                                     <div className="flex justify-center items-center gap-2 mb-2">
                                         {[0, 1, 2, 3, 4].map((step) => (
                                             <div
@@ -402,218 +408,232 @@ export default function AuthPage() {
                                     </div>
                                 )}
 
-                                {/* Contenu selon l'étape */}
-                                <div className="min-h-[250px]">
+                                {/* Contenu selon l'étape AVEC ANIMATION */}
+                                <div className="relative overflow-hidden min-h-[280px]">
+                                    {[0, 1, 2, 3, 4].map((stepIndex) => (
+                                        <div
+                                            key={stepIndex}
+                                            className={`absolute w-full transition-all duration-500 ease-in-out ${stepIndex === signupStep
+                                                    ? 'translate-x-0 opacity-100'
+                                                    : stepIndex < signupStep
+                                                        ? slideDirection === 'right' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
+                                                        : slideDirection === 'right' ? 'translate-x-full opacity-0' : '-translate-x-full opacity-0'
+                                                }`}
+                                        >
+                                            {/* ÉTAPE 0 : Type d'utilisateur */}
+                                            {stepIndex === 0 && (
+                                                <div className="text-center">
+                                                    <h2 className="text-lg font-semibold text-gray-900 mb-1">Rejoignez AutoConnect</h2>
+                                                    <p className="text-xs text-gray-500 mb-4">Choisissez votre profil</p>
 
-                                    {/* ÉTAPE 0 : Type d'utilisateur */}
-                                    {signupStep === 0 && (
-                                        <div className="text-center">
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2">Rejoignez AutoConnect</h2>
-                                            <p className="text-xs text-gray-500 mb-6">Choisissez votre profil</p>
-
-                                            <div className="grid grid-cols-2 gap-4 mb-6">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setFormData(prev => ({ ...prev, type_utilisateur: 'CLIENT' }));
-                                                        setTimeout(nextStep, 300);
-                                                    }}
-                                                    className={`p-4 rounded-xl border-2 transition ${formData.type_utilisateur === 'CLIENT'
-                                                        ? 'border-black bg-gray-50'
-                                                        : 'border-gray-200 hover:border-gray-300'
-                                                        }`}
-                                                >
-                                                    <div className="text-3xl mb-2">👤</div>
-                                                    <div className="font-medium text-gray-900 text-sm mb-1">Client</div>
-
-                                                </button>
-
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        setFormData(prev => ({ ...prev, type_utilisateur: 'CONCESSIONNAIRE' }));
-                                                        setTimeout(nextStep, 300);
-                                                    }}
-                                                    className={`p-4 rounded-xl border-2 transition ${formData.type_utilisateur === 'CONCESSIONNAIRE'
-                                                        ? 'border-black bg-gray-50'
-                                                        : 'border-gray-200 hover:border-gray-300'
-                                                        }`}
-                                                >
-                                                    <div className="text-3xl mb-2">🏢</div>
-                                                    <div className="font-medium text-gray-900 text-sm mb-1">Concessionnaire</div>
-
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ÉTAPE 1 : Nom et Prénom */}
-                                    {signupStep === 1 && (
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2 text-center">Vos informations</h2>
-                                            <p className="text-xs text-gray-500 mb-5 text-center">Comment vous appelez-vous ?</p>
-
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Prénom *</label>
-                                                    <input
-                                                        name="prenom"
-                                                        type="text"
-                                                        required
-                                                        value={formData.prenom}
-                                                        onChange={handleChange}
-                                                        className="block w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                        placeholder="Aminata"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Nom *</label>
-                                                    <input
-                                                        name="nom"
-                                                        type="text"
-                                                        required
-                                                        value={formData.nom}
-                                                        onChange={handleChange}
-                                                        className="block w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                        placeholder="Diop"
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ÉTAPE 2 : Email */}
-                                    {signupStep === 2 && (
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2 text-center">Votre email</h2>
-                                            <p className="text-xs text-gray-500 mb-5 text-center">Nous l'utiliserons pour vous contacter</p>
-
-                                            <div>
-                                                <label className="text-xs font-medium text-gray-600 mb-1 block">Adresse email *</label>
-                                                <input
-                                                    name="email"
-                                                    type="email"
-                                                    required
-                                                    value={formData.email}
-                                                    onChange={handleChange}
-                                                    className="block w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                    placeholder="exemple@email.com"
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* ÉTAPE 3 : Mots de passe */}
-                                    {signupStep === 3 && (
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2 text-center">Sécurisez votre compte</h2>
-                                            <p className="text-xs text-gray-500 mb-5 text-center">Choisissez un mot de passe sécurisé</p>
-
-                                            <div className="space-y-3">
-                                                <div>
-                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Mot de passe *</label>
-                                                    <div className="relative">
-                                                        <input
-                                                            name="password"
-                                                            type={showPassword ? "text" : "password"}
-                                                            required
-                                                            value={formData.password}
-                                                            onChange={handleChange}
-                                                            className="block w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                            placeholder="Minimum 8 caractères"
-                                                        />
+                                                    <div className="grid grid-cols-2 gap-3">
                                                         <button
                                                             type="button"
-                                                            onClick={() => setShowPassword(!showPassword)}
-                                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, type_utilisateur: 'CLIENT' }));
+                                                                setTimeout(() => {
+                                                                    setSlideDirection('right');
+                                                                    nextStep();
+                                                                }, 300);
+                                                            }}
+                                                            className={`p-4 rounded-xl border-2 transition ${formData.type_utilisateur === 'CLIENT'
+                                                                    ? 'border-black bg-gray-50'
+                                                                    : 'border-gray-200 hover:border-gray-300'
+                                                                }`}
                                                         >
-                                                            {showPassword ? '👁️' : '👁️‍🗨️'}
+                                                            <div className="text-3xl mb-2">👤</div>
+                                                            <div className="font-medium text-gray-900 text-sm">Client</div>
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setFormData(prev => ({ ...prev, type_utilisateur: 'CONCESSIONNAIRE' }));
+                                                                setTimeout(() => {
+                                                                    setSlideDirection('right');
+                                                                    nextStep();
+                                                                }, 300);
+                                                            }}
+                                                            className={`p-4 rounded-xl border-2 transition ${formData.type_utilisateur === 'CONCESSIONNAIRE'
+                                                                    ? 'border-black bg-gray-50'
+                                                                    : 'border-gray-200 hover:border-gray-300'
+                                                                }`}
+                                                        >
+                                                            <div className="text-3xl mb-2">🏢</div>
+                                                            <div className="font-medium text-gray-900 text-sm">Concessionnaire</div>
                                                         </button>
                                                     </div>
                                                 </div>
+                                            )}
+
+                                            {/* ÉTAPE 1 : Nom et Prénom */}
+                                            {stepIndex === 1 && (
                                                 <div>
-                                                    <label className="text-xs font-medium text-gray-600 mb-1 block">Confirmer le mot de passe *</label>
-                                                    <input
-                                                        name="password2"
-                                                        type={showPassword ? "text" : "password"}
-                                                        required
-                                                        value={formData.password2}
-                                                        onChange={handleChange}
-                                                        className="block w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                                                        placeholder="Confirmez le mot de passe"
-                                                    />
+                                                    <h2 className="text-lg font-semibold text-gray-900 mb-1 text-center">Vos informations</h2>
+                                                    <p className="text-xs text-gray-500 mb-3 text-center">Comment vous appelez-vous ?</p>
+
+                                                    <div className="space-y-2.5">
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Prénom *</label>
+                                                            <input
+                                                                name="prenom"
+                                                                type="text"
+                                                                required
+                                                                value={formData.prenom}
+                                                                onChange={handleChange}
+                                                                className="block w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                placeholder="Aminata"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Nom *</label>
+                                                            <input
+                                                                name="nom"
+                                                                type="text"
+                                                                required
+                                                                value={formData.nom}
+                                                                onChange={handleChange}
+                                                                className="block w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                placeholder="Diop"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                            )}
+
+                                            {/* ÉTAPE 2 : Email */}
+                                            {stepIndex === 2 && (
+                                                <div>
+                                                    <h2 className="text-lg font-semibold text-gray-900 mb-1 text-center">Votre email</h2>
+                                                    <p className="text-xs text-gray-500 mb-3 text-center">Nous l'utiliserons pour vous contacter</p>
+
+                                                    <div>
+                                                        <label className="text-xs font-medium text-gray-600 mb-1 block">Adresse email *</label>
+                                                        <input
+                                                            name="email"
+                                                            type="email"
+                                                            required
+                                                            value={formData.email}
+                                                            onChange={handleChange}
+                                                            className="block w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                            placeholder="exemple@email.com"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* ÉTAPE 3 : Mots de passe */}
+                                            {stepIndex === 3 && (
+                                                <div>
+                                                    <h2 className="text-lg font-semibold text-gray-900 mb-1 text-center">Sécurisez votre compte</h2>
+                                                    <p className="text-xs text-gray-500 mb-3 text-center">Choisissez un mot de passe sécurisé</p>
+
+                                                    <div className="space-y-2.5">
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Mot de passe *</label>
+                                                            <div className="relative">
+                                                                <input
+                                                                    name="password"
+                                                                    type={showPassword ? "text" : "password"}
+                                                                    required
+                                                                    value={formData.password}
+                                                                    onChange={handleChange}
+                                                                    className="block w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                    placeholder="Minimum 8 caractères"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setShowPassword(!showPassword)}
+                                                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+                                                                >
+                                                                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="text-xs font-medium text-gray-600 mb-1 block">Confirmer le mot de passe *</label>
+                                                            <input
+                                                                name="password2"
+                                                                type={showPassword ? "text" : "password"}
+                                                                required
+                                                                value={formData.password2}
+                                                                onChange={handleChange}
+                                                                className="block w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                                                                placeholder="Confirmez le mot de passe"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* ÉTAPE 4 : Récapitulatif - PLUS COMPACT */}
+                                            {stepIndex === 4 && (
+                                                <div>
+                                                    <h2 className="text-base font-semibold text-gray-900 mb-1 text-center">Vérifiez vos informations</h2>
+                                                    <p className="text-xs text-gray-500 mb-3 text-center">Dernière étape !</p>
+
+                                                    <div className="bg-gray-50 rounded-lg p-2.5 space-y-1.5 mb-3">
+                                                        <div className="flex items-center justify-between py-1.5 border-b border-gray-200">
+                                                            <span className="text-[10px] text-gray-600">Type de compte</span>
+                                                            <span className="text-xs font-medium text-gray-900">
+                                                                {formData.type_utilisateur === 'CLIENT' ? '👤 Client' : '🏢 Concessionnaire'}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between py-1.5 border-b border-gray-200">
+                                                            <span className="text-[10px] text-gray-600">Nom complet</span>
+                                                            <span className="text-xs font-medium text-gray-900">{formData.prenom} {formData.nom}</span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between py-1.5 border-b border-gray-200">
+                                                            <span className="text-[10px] text-gray-600">Email</span>
+                                                            <span className="text-xs font-medium text-gray-900 truncate max-w-[180px]">{formData.email}</span>
+                                                        </div>
+                                                        <div className="flex items-center justify-between py-1.5">
+                                                            <span className="text-[10px] text-gray-600">Mot de passe</span>
+                                                            <span className="text-xs font-medium text-gray-900">••••••••</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <form onSubmit={handleSubmit}>
+                                                        <button
+                                                            type="submit"
+                                                            disabled={loading}
+                                                            className="w-full py-2 px-4 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition shadow-lg disabled:opacity-50"
+                                                        >
+                                                            {loading ? 'Création...' : 'Créer mon compte ✓'}
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-
-                                    {/* ÉTAPE 4 : Récapitulatif */}
-                                    {signupStep === 4 && (
-                                        <div>
-                                            <h2 className="text-xl font-semibold text-gray-900 mb-2 text-center">Vérifiez vos informations</h2>
-                                            <p className="text-xs text-gray-500 mb-5 text-center">Dernière étape avant de commencer !</p>
-
-                                            <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                                                <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                                                    <span className="text-xs text-gray-600">Type de compte</span>
-                                                    <span className="text-sm font-medium text-gray-900">
-                                                        {formData.type_utilisateur === 'CLIENT' ? '👤 Client' : '🏢 Concessionnaire'}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                                                    <span className="text-xs text-gray-600">Nom complet</span>
-                                                    <span className="text-sm font-medium text-gray-900">{formData.prenom} {formData.nom}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between py-2 border-b border-gray-200">
-                                                    <span className="text-xs text-gray-600">Email</span>
-                                                    <span className="text-sm font-medium text-gray-900">{formData.email}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between py-2">
-                                                    <span className="text-xs text-gray-600">Mot de passe</span>
-                                                    <span className="text-sm font-medium text-gray-900">••••••••</span>
-                                                </div>
-                                            </div>
-
-                                            <form onSubmit={handleSubmit} className="mt-5">
-                                                <button
-                                                    type="submit"
-                                                    disabled={loading}
-                                                    className="w-full py-2.5 px-4 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition shadow-lg disabled:opacity-50"
-                                                >
-                                                    {loading ? 'Création du compte...' : 'Créer mon compte ✓'}
-                                                </button>
-                                            </form>
-                                        </div>
-                                    )}
-
+                                    ))}
                                 </div>
 
-                                {/* Boutons de navigation (sauf étape 0 et étape 4) */}
+                                {/* Boutons de navigation - PLUS COURTS ET CENTRÉS */}
                                 {signupStep !== 0 && signupStep !== 4 && (
-                                    <div className="flex items-center justify-between gap-3 mt-6">
+                                    <div className="flex items-center justify-center gap-3 mt-3">
                                         <button
                                             type="button"
                                             onClick={prevStep}
-                                            className="flex-1 py-2 px-4 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                                            className="w-32 py-1.5 px-3 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
                                         >
                                             ← Retour
                                         </button>
                                         <button
                                             type="button"
                                             onClick={nextStep}
-                                            className="flex-1 py-2 px-4 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition"
+                                            className="w-32 py-1.5 px-3 rounded-full text-sm font-medium text-white bg-black hover:bg-gray-900 transition"
                                         >
                                             Suivant →
                                         </button>
                                     </div>
                                 )}
 
-                                {/* Bouton retour pour étape 4 */}
+                                {/* Bouton retour pour étape 4 - PLUS COURT ET CENTRÉ */}
                                 {signupStep === 4 && (
                                     <button
                                         type="button"
                                         onClick={prevStep}
-                                        className="w-full mt-3 py-2 px-4 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
+                                        className="w-48 mx-auto block mt-2 py-1.5 px-3 rounded-full text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition"
                                     >
                                         ← Modifier mes informations
                                     </button>
