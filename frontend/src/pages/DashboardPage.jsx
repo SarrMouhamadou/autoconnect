@@ -1,279 +1,203 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import Layout from '../components/layout/Layout';
-import ProfileCompletionBanner from '../components/profile/ProfileCompletionBanner';  // ← AJOUTER
-import authService from '../services/authService';
+import DashboardLayout from '../components/layout/DashboardLayout';
+import StatCard from '../components/dashboard/StatCard';
+import RevenueChart from '../components/dashboard/RevenueChart';
+import CalendarWidget from '../components/dashboard/CalendarWidget';
+import GaugeWidget from '../components/dashboard/GaugeWidget';
+import TransactionsTable from '../components/dashboard/TransactionsTable';
+import { dashboardData } from '../data/mockData';
 
 export default function DashboardPage() {
   const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-
-  // État pour la progression du profil
-  const [profileProgress, setProfileProgress] = useState(null);
-  const [loadingProgress, setLoadingProgress] = useState(true);
-
-  // Charger la progression au montage
+  // Charger les données selon le rôle
   useEffect(() => {
-    const fetchProgress = async () => {
-      try {
-        setLoadingProgress(true);
-        const progress = await authService.getProfileProgress();
-        setProfileProgress(progress);
-      } catch (error) {
-        console.error('Erreur lors du chargement de la progression:', error);
-      } finally {
-        setLoadingProgress(false);
+    const loadData = async () => {
+      setLoading(true);
+
+      // Simuler un appel API
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (isConcessionnaire()) {
+        setData(dashboardData.concessionnaire);
+      } else if (isClient()) {
+        setData(dashboardData.client);
+      } else {
+        // Admin ou autre
+        setData(dashboardData.concessionnaire); // Par défaut pour l'instant
       }
+
+      setLoading(false);
     };
 
-    fetchProgress();
-  }, []);
+    loadData();
+  }, [isConcessionnaire, isClient]);
 
-  // Déterminer le message de bienvenue selon le type
-  const getWelcomeMessage = () => {
-    if (isClient()) {
-      return "Bienvenue dans votre espace client";
-    } else if (isConcessionnaire()) {
-      return "Bienvenue dans votre espace concessionnaire";
-    } else if (isAdmin()) {
-      return "Bienvenue dans l'administration";
-    }
-    return "Bienvenue";
-  };
-
-  // Icône selon le type
-  const getIcon = () => {
-    if (isClient()) return "👤";
-    if (isConcessionnaire()) return "🏢";
-    if (isAdmin()) return "👨‍💼";
-    return "🚗";
-  };
+  if (loading) {
+    return (
+      <DashboardLayout title="Dashboard">
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-    <Layout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-
-
-        {/* Bannière de complétion du profil */}
-        {!loadingProgress && (
-          <ProfileCompletionBanner user={user} progress={profileProgress} />
-        )}
-
-        {/* Badge de validation pour concessionnaire validé */}
-        {isConcessionnaire() && user?.statut_compte === 'VALIDE' && (
-          <div className="bg-green-50 border-l-4 border-green-400 p-6 mb-6 rounded-r-lg">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg className="h-6 w-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">
-                  ✅ Votre compte est validé !
-                </h3>
-                <div className="mt-1 text-sm text-green-700">
-                  <p>
-                    Félicitations ! Vous pouvez maintenant ajouter vos véhicules et gérer vos locations.
-                  </p>
-                </div>
-                <div className="mt-3">
-                  <Link
-                    to="/my-vehicles"
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200 focus:outline-none transition"
-                  >
-                    Ajouter mon premier véhicule →
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Carte de bienvenue */}
-        <div className="bg-white rounded-lg shadow-xl p-8 mb-8">
-          <div className="text-center">
-            <div className="text-6xl mb-4">{getIcon()}</div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-2">
-              {getWelcomeMessage()}
-            </h2>
-            <p className="text-xl text-gray-600">
-              Bonjour {user?.prenom} {user?.nom} !
-            </p>
-          </div>
+    <DashboardLayout title="Dashboard">
+      {/* Filtres de période */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-2">
+          <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">
+            Day
+          </button>
+          <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">
+            Week
+          </button>
+          <button className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg">
+            Month
+          </button>
+          <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">
+            Year
+          </button>
         </div>
 
-        {/* Informations utilisateur */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Carte Profil */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📋 Informations personnelles
-            </h3>
-            <div className="space-y-3">
-              <div>
-                <span className="text-sm font-medium text-gray-500">Email:</span>
-                <p className="text-gray-900">{user?.email}</p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Type de compte:</span>
-                <p className="text-gray-900">
-                  {user?.type_utilisateur === 'CLIENT' && '👤 Client'}
-                  {user?.type_utilisateur === 'CONCESSIONNAIRE' && '🏢 Concessionnaire'}
-                  {user?.type_utilisateur === 'ADMINISTRATEUR' && '👨‍💼 Administrateur'}
-                </p>
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-500">Rôle:</span>
-                <p className="text-gray-900">{user?.role?.nom}</p>
-              </div>
-              {user?.telephone && (
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Téléphone:</span>
-                  <p className="text-gray-900">{user.telephone}</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Carte Entreprise (si concessionnaire) */}
-          {isConcessionnaire() && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                🏢 Informations entreprise
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Entreprise:</span>
-                  <p className="text-gray-900">{user?.nom_entreprise}</p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-gray-500">SIRET:</span>
-                  <p className="text-gray-900">{user?.siret}</p>
-                </div>
-                {user?.site_web && (
-                  <div>
-                    <span className="text-sm font-medium text-gray-500">Site web:</span>
-                    <a
-                      href={user.site_web}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
-                    >
-                      {user.site_web}
-                    </a>
-                  </div>
-                )}
-                <div>
-                  <span className="text-sm font-medium text-gray-500">Statut:</span>
-                  <p className={`font-medium ${user?.est_valide ? 'text-green-600' : 'text-orange-600'}`}>
-                    {user?.est_valide ? '✅ Validé' : '⏳ En attente de validation'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Carte Actions rapides */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              ⚡ Actions rapides
-            </h3>
-            <div className="space-y-3">
-              <Link
-                to="/profile"
-                className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-              >
-                📋 Voir mon profil
-              </Link>
-              <Link
-                to="/profile/edit"
-                className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-              >
-                📝 Modifier mon profil
-              </Link>
-              <Link
-                to="/profile/change-password"
-                className="block w-full text-left px-4 py-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition"
-              >
-                🔒 Changer mon mot de passe
-              </Link>
-              {isClient() && (
-                <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition">
-                  🚗 Rechercher un véhicule (Bientôt)
-                </button>
-              )}
-              {isConcessionnaire() && (
-                <>
-                  <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition">
-                    ➕ Ajouter un véhicule (Bientôt)
-                  </button>
-                  <button className="w-full text-left px-4 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition">
-                    📊 Voir mes statistiques (Bientôt)
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Carte Statistiques */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              📊 Statistiques
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              {isClient() && (
-                <>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">0</div>
-                    <div className="text-sm text-gray-600">Locations actives</div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">0</div>
-                    <div className="text-sm text-gray-600">Locations terminées</div>
-                  </div>
-                </>
-              )}
-              {isConcessionnaire() && (
-                <>
-                  <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">0</div>
-                    <div className="text-sm text-gray-600">Véhicules</div>
-                  </div>
-                  <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">0</div>
-                    <div className="text-sm text-gray-600">Locations actives</div>
-                  </div>
-                  <div className="text-center p-4 bg-purple-50 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">0 FCFA</div>
-                    <div className="text-sm text-gray-600">Revenus ce mois</div>
-                  </div>
-                  <div className="text-center p-4 bg-orange-50 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">0</div>
-                    <div className="text-sm text-gray-600">Demandes en attente</div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Message informatif */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <div className="flex items-start">
-            <div className="text-2xl mr-3">ℹ️</div>
-            <div>
-              <h4 className="font-semibold text-blue-900 mb-1">
-                Tableau de bord temporaire
-              </h4>
-              <p className="text-sm text-blue-700">
-                Cette page est une version basique pour tester l'authentification.
-                Les fonctionnalités complètes seront ajoutées dans les prochaines phases du projet.
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="font-medium">
+            1 Sep 2024 - 31 Sep 2024
+          </span>
         </div>
       </div>
-    </Layout>
+
+      {/* CONCESSIONNAIRE DASHBOARD */}
+      {isConcessionnaire() && data && (
+        <>
+          {/* Cartes statistiques - Grid 4 colonnes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <StatCard
+              title={data.stats.revenue.label}
+              value={`${data.stats.revenue.value.toLocaleString('fr-FR')} FCFA`}
+              change={data.stats.revenue.change}
+              trend={data.stats.revenue.trend}
+              icon="💰"
+              featured={true}
+            />
+            <StatCard
+              title={data.stats.activeVehicles.label}
+              value={data.stats.activeVehicles.value}
+              change={data.stats.activeVehicles.change}
+              trend={data.stats.activeVehicles.trend}
+              icon="🚗"
+            />
+            <StatCard
+              title={data.stats.currentRentals.label}
+              value={data.stats.currentRentals.value}
+              change={data.stats.currentRentals.change}
+              trend={data.stats.currentRentals.trend}
+              icon="📋"
+            />
+            <StatCard
+              title={data.stats.occupancyRate.label}
+              value={`${data.stats.occupancyRate.value}%`}
+              change={data.stats.occupancyRate.change}
+              trend={data.stats.occupancyRate.trend}
+              icon="📊"
+            />
+          </div>
+
+          {/* Graphique + Calendar/Gauge - Grid 2 colonnes */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* Graphique (2/3) */}
+            <div className="lg:col-span-2">
+              <RevenueChart
+                data={data.revenueChart}
+                title="Revenus mensuels"
+              />
+            </div>
+
+            {/* Calendar + Gauge (1/3) */}
+            <div className="space-y-6">
+              <CalendarWidget events={data.upcomingEvents} />
+              <GaugeWidget
+                title="Croissance du parc"
+                value={75}
+                change={5}
+              />
+            </div>
+          </div>
+
+          {/* Tableau des locations récentes */}
+          <TransactionsTable
+            title="Locations récentes"
+            data={data.recentRentals}
+          />
+        </>
+      )}
+
+      {/* CLIENT DASHBOARD */}
+      {isClient() && data && (
+        <>
+          {/* Cartes statistiques - Grid 4 colonnes */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <StatCard
+              title={data.stats.activeRentals.label}
+              value={data.stats.activeRentals.value}
+              change={data.stats.activeRentals.change}
+              trend={data.stats.activeRentals.trend}
+              icon="🚗"
+              featured={true}
+            />
+            <StatCard
+              title={data.stats.totalRentals.label}
+              value={data.stats.totalRentals.value}
+              change={data.stats.totalRentals.change}
+              trend={data.stats.totalRentals.trend}
+              icon="📋"
+            />
+            <StatCard
+              title={data.stats.totalSpent.label}
+              value={`${data.stats.totalSpent.value.toLocaleString('fr-FR')} FCFA`}
+              change={data.stats.totalSpent.change}
+              trend={data.stats.totalSpent.trend}
+              icon="💰"
+            />
+            <StatCard
+              title={data.stats.favorites.label}
+              value={data.stats.favorites.value}
+              change={data.stats.favorites.change}
+              trend={data.stats.favorites.trend}
+              icon="❤️"
+            />
+          </div>
+
+          {/* Historique des locations */}
+          <div className="mb-6">
+            <TransactionsTable
+              title="Mes locations"
+              data={data.rentalHistory}
+            />
+          </div>
+
+          {/* Message de bienvenue */}
+          <div className="bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl p-8 text-white text-center">
+            <h2 className="text-2xl font-bold mb-2">
+              Bienvenue, {user?.prenom} ! 👋
+            </h2>
+            <p className="text-teal-100 mb-4">
+              Prêt à louer votre prochain véhicule ?
+            </p>
+            <button className="px-6 py-3 bg-white text-teal-700 rounded-lg font-medium hover:bg-gray-100 transition">
+              Parcourir les véhicules
+            </button>
+          </div>
+        </>
+      )}
+    </DashboardLayout>
   );
 }

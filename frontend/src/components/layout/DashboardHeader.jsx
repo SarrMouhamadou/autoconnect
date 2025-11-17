@@ -7,14 +7,25 @@ export default function DashboardHeader({ onMenuClick, title = 'Dashboard' }) {
     const [searchQuery, setSearchQuery] = useState('');
 
     return (
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
             <div className="px-4 sm:px-6 lg:px-8 py-4">
                 <div className="flex items-center justify-between">
                     {/* Left: Menu + Title */}
+                    {/* Left: Menu + Title */}
                     <div className="flex items-center space-x-4">
+                        {/* Hamburger pour mobile */}
                         <button
                             onClick={onMenuClick}
                             className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition"
+                        >
+                            <FiMenu className="w-6 h-6 text-gray-700" />
+                        </button>
+
+                        {/* Hamburger pour desktop (nouveau) */}
+                        <button
+                            onClick={onMenuClick}
+                            className="hidden lg:block p-2 rounded-lg hover:bg-gray-100 transition"
+                            title="Masquer/Afficher le menu"
                         >
                             <FiMenu className="w-6 h-6 text-gray-700" />
                         </button>

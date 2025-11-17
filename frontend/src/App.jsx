@@ -14,6 +14,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import EditProfilePage from './pages/profile/EditProfilePage';
 import ChangePasswordPage from './pages/profile/ChangePasswordPage';
+import SettingsPage from './pages/SettingsPage';
 
 function App() {
   return (
@@ -35,14 +36,7 @@ function App() {
           {/* ================================ */}
 
           {/* Dashboard */}
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
           {/* Profil */}
           <Route
@@ -71,6 +65,8 @@ function App() {
               </ProtectedRoute>
             }
           />
+          // Dans les routes protégées
+<Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
           {/* ================================ */}
           {/* ROUTES FUTURES (Phases 3-7) */}
