@@ -238,7 +238,7 @@ export default function AuthPage() {
             GAUCHE - FORMULAIRE
         ======================================== */}
                 <div className="h-full p-4 sm:p-5 lg:p-6 flex flex-col items-center justify-center bg-white overflow-hidden">
-                    <div className="w-full max-w-sm">
+                    <div className="w-full max-w-xs">
 
                         {/* Header */}
                         <div className="mb-4 text-center">
