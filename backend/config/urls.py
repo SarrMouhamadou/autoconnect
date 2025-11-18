@@ -25,7 +25,15 @@ urlpatterns = [
 
     # APIs Authentication
     path('api/auth/', include('users.urls')),
+
+    # ✅ NOUVEAU : APIs Véhicules
+    path('api/', include('vehicules.urls')),
 ]
+
+# Servir les fichiers media en développement
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
 
 # Servir les fichiers media en développement
 if settings.DEBUG:

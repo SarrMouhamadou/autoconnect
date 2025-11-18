@@ -208,3 +208,8 @@ CELERY_TIMEZONE = 'UTC'
 # Les autres types (Concessionnaire, Admin) sont gérés via le champ 'role'
 
 AUTH_USER_MODEL = 'users.User'
+
+
+# Media files (Uploads utilisateurs)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'

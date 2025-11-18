@@ -1,0 +1,52 @@
+[
+  {
+    "model": "vehicules.equipement",
+    "pk": 1,
+    "fields": {
+      "nom": "GPS",
+      "icone": "🗺️",
+      "description": "Système de navigation GPS",
+      "est_populaire": true
+    }
+  },
+  {
+    "model": "vehicules.equipement",
+    "pk": 2,
+    "fields": {
+      "nom": "Bluetooth",
+      "icone": "📱",
+      "description": "Connexion Bluetooth",
+      "est_populaire": true
+    }
+  },
+  {
+    "model": "vehicules.equipement",
+    "pk": 3,
+    "fields": {
+      "nom": "Caméra de recul",
+      "icone": "📷",
+      "description": "Caméra pour faciliter les manœuvres",
+      "est_populaire": true
+    }
+  },
+  {
+    "model": "vehicules.equipement",
+    "pk": 4,
+    "fields": {
+      "nom": "Régulateur de vitesse",
+      "icone": "⚡",
+      "description": "Régulateur de vitesse automatique",
+      "est_populaire": false
+    }
+  },
+  {
+    "model": "vehicules.equipement",
+    "pk": 5,
+    "fields": {
+      "nom": "Sièges chauffants",
+      "icone": "🔥",
+      "description": "Sièges avant chauffants",
+      "est_populaire": false
+    }
+  }
+]
