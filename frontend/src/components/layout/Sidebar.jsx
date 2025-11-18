@@ -10,14 +10,49 @@ export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
   const { user, logout, isConcessionnaire, isAdmin } = useAuth();
 
-  const menuItems = [
-    { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
-    { path: '/vehicles', icon: FiTruck, label: 'Véhicules', roles: ['all'] },
-    { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
-    { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['CONCESSIONNAIRE', 'ADMINISTRATEUR'] },
-    { path: '/dealers', icon: FiUsers, label: 'Concessionnaires', roles: ['ADMINISTRATEUR'] },
-    { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
-  ];
+  const getMenuItems = () => {
+    const baseItems = [
+      { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
+    ];
+
+    // Menu pour CONCESSIONNAIRE
+    if (user?.type_utilisateur === 'CONCESSIONNAIRE') {
+      return [
+        { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
+        { path: '/my-vehicules', icon: FiTruck, label: 'Mes véhicules', roles: ['CONCESSIONNAIRE'] },
+        { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
+        { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['CONCESSIONNAIRE'] },
+        { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
+      ];
+    }
+
+    // Menu pour CLIENT
+    if (user?.type_utilisateur === 'CLIENT') {
+      return [
+        { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
+        { path: '/vehicules', icon: FiTruck, label: 'Catalogue', roles: ['all'] },
+        { path: '/my-bookings', icon: FiFileText, label: 'Mes réservations', roles: ['CLIENT'] },
+        { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
+      ];
+    }
+
+    // Menu pour ADMINISTRATEUR
+    if (user?.type_utilisateur === 'ADMINISTRATEUR') {
+      return [
+        { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
+        { path: '/vehicules', icon: FiTruck, label: 'Véhicules', roles: ['all'] },
+        { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
+        { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['ADMINISTRATEUR'] },
+        { path: '/dealers', icon: FiUsers, label: 'Concessionnaires', roles: ['ADMINISTRATEUR'] },
+        { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
+      ];
+    }
+
+    // Menu par défaut
+    return baseItems;
+  };
+
+  const menuItems = getMenuItems();
 
   const bottomMenuItems = [
     { path: '/settings', icon: FiSettings, label: 'Paramètres' },
@@ -119,53 +154,52 @@ export default function Sidebar({ isOpen, onClose }) {
 
           {/* Navigation secondaire */}
           {/* Navigation secondaire */}
-<div className="p-4 space-y-1 border-t border-teal-600/30">
-  {bottomMenuItems.map((item) => {
-    const active = isActive(item.path);
-    return (
-      <Link
-        key={item.path}
-        to={item.path}
-        onClick={onClose}
-        className="block relative"
-      >
-        <div
-          className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${
-            active
-              ? 'text-teal-700 font-semibold'
-              : 'text-teal-100 hover:text-white'
-          }`}
-          style={{ overflow: 'visible' }}
-        >
-          {/* Fond arrondi pour l'item actif - MÊME STYLE QUE NAVIGATION PRINCIPALE */}
-          {active && (
-            <div
-              className="absolute inset-y-0 bg-gray-100 rounded-l-full shadow-lg z-0"
-              style={{
-                left: '0px',
-                right: '0px',
-                width: 'calc(100% + 16px)'
-              }}
-            />
-          )}
+          <div className="p-4 space-y-1 border-t border-teal-600/30">
+            {bottomMenuItems.map((item) => {
+              const active = isActive(item.path);
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className="block relative"
+                >
+                  <div
+                    className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${active
+                        ? 'text-teal-700 font-semibold'
+                        : 'text-teal-100 hover:text-white'
+                      }`}
+                    style={{ overflow: 'visible' }}
+                  >
+                    {/* Fond arrondi pour l'item actif - MÊME STYLE QUE NAVIGATION PRINCIPALE */}
+                    {active && (
+                      <div
+                        className="absolute inset-y-0 bg-gray-100 rounded-l-full shadow-lg z-0"
+                        style={{
+                          left: '0px',
+                          right: '0px',
+                          width: 'calc(100% + 16px)'
+                        }}
+                      />
+                    )}
 
-          {/* Icône et texte */}
-          <item.icon className={`w-5 h-5 relative z-10 ${active ? 'text-teal-700' : ''}`} />
-          <span className="text-sm relative z-10">{item.label}</span>
-        </div>
-      </Link>
-    );
-  })}
+                    {/* Icône et texte */}
+                    <item.icon className={`w-5 h-5 relative z-10 ${active ? 'text-teal-700' : ''}`} />
+                    <span className="text-sm relative z-10">{item.label}</span>
+                  </div>
+                </Link>
+              );
+            })}
 
-  {/* Bouton Déconnexion (sans effet de sélection) */}
-  <button
-    onClick={handleLogout}
-    className="flex items-center space-x-3 px-4 py-3 text-teal-100 hover:text-white transition-all w-full text-left rounded-lg hover:bg-white/10"
-  >
-    <FiLogOut className="w-5 h-5" />
-    <span className="text-sm">Déconnexion</span>
-  </button>
-</div>
+            {/* Bouton Déconnexion (sans effet de sélection) */}
+            <button
+              onClick={handleLogout}
+              className="flex items-center space-x-3 px-4 py-3 text-teal-100 hover:text-white transition-all w-full text-left rounded-lg hover:bg-white/10"
+            >
+              <FiLogOut className="w-5 h-5" />
+              <span className="text-sm">Déconnexion</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>

@@ -16,6 +16,17 @@ import EditProfilePage from './pages/profile/EditProfilePage';
 import ChangePasswordPage from './pages/profile/ChangePasswordPage';
 import SettingsPage from './pages/SettingsPage';
 
+// Pages Véhicules (Concessionnaire)
+import MyVehiculesPage from './pages/vehicules/MyVehiculesPage';
+import AddVehiculesPage from './pages/vehicules/AddVehiculesPage';
+import EditVehiculesPage from './pages/vehicules/EditVehiculesPage';
+
+// Pages Catalogue (Client)
+import VehiculesPage from './pages/vehicules/VehiculesPage';
+import VehiculeDetailPage from './pages/vehicules/VehiculeDetailPage';
+
+
+
 function App() {
   return (
     <Router>
@@ -67,6 +78,40 @@ function App() {
           />
           // Dans les routes protégées
 <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+
+
+{/* Routes Véhicules - Concessionnaire uniquement */}
+          <Route
+            path="/my-vehicules"
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <MyVehiculesPage />
+              </ProtectedRoute>
+            }
+          />
+
+
+          <Route
+            path="/my-vehicules/add"
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <AddVehiculesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-vehicules/edit/:id"
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <EditVehiculesPage />
+              </ProtectedRoute>
+            }
+          />
+          
+          {/* Routes Catalogue - Public et Client */}
+          <Route path="/vehicules" element={<VehiculesPage />} />
+          <Route path="/vehicules/:id" element={<VehiculeDetailPage />} />
 
           {/* ================================ */}
           {/* ROUTES FUTURES (Phases 3-7) */}

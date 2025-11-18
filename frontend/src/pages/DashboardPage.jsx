@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import StatCard from '../components/dashboard/StatCard';
@@ -7,11 +8,42 @@ import CalendarWidget from '../components/dashboard/CalendarWidget';
 import GaugeWidget from '../components/dashboard/GaugeWidget';
 import TransactionsTable from '../components/dashboard/TransactionsTable';
 import { dashboardData } from '../data/mockData';
+import vehiculeService from '../services/vehiculeService';
+import { FiTruck, FiPlus } from 'react-icons/fi';
+
 
 export default function DashboardPage() {
   const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Ajout
+  const [vehicleStats, setVehicleStats] = useState({
+    totalVehicules: 0,
+    vehiculesDisponibles: 0,
+    vehiculesLoues: 0,
+    vehiculesEnMaintenance: 0,
+  });
+  const [recentVehicles, setRecentVehicles] = useState([]);
+
+  const loadVehicleStats = async () => {
+    try {
+      const data = await vehiculeService.getMesVehicules();
+      const vehicules = data.results || data;
+
+      setVehicleStats({
+        totalVehicules: vehicules.length,
+        vehiculesDisponibles: vehicules.filter(v => v.statut === 'DISPONIBLE').length,
+        vehiculesLoues: vehicules.filter(v => v.statut === 'LOUE').length,
+        vehiculesEnMaintenance: vehicules.filter(v => v.statut === 'MAINTENANCE').length,
+      });
+
+      setRecentVehicles(vehicules.slice(0, 3));
+    } catch (error) {
+      console.error('Erreur chargement stats véhicules:', error);
+    }
+  };
+
 
   // Charger les données selon le rôle
   useEffect(() => {
@@ -23,6 +55,7 @@ export default function DashboardPage() {
 
       if (isConcessionnaire()) {
         setData(dashboardData.concessionnaire);
+        await loadVehicleStats();
       } else if (isClient()) {
         setData(dashboardData.client);
       } else {
@@ -110,6 +143,175 @@ export default function DashboardPage() {
               icon="📊"
             />
           </div>
+
+          {/* ⬅️ AJOUTER cette section - Statistiques véhicules réels */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-teal-100 rounded-lg">
+                  <FiTruck className="w-6 h-6 text-teal-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">
+                {vehicleStats.totalVehicules}
+              </div>
+              <div className="text-sm text-gray-600">Total véhicules</div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <FiTruck className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">
+                {vehicleStats.vehiculesDisponibles}
+              </div>
+              <div className="text-sm text-gray-600">Disponibles</div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <FiTruck className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">
+                {vehicleStats.vehiculesLoues}
+              </div>
+              <div className="text-sm text-gray-600">Loués</div>
+            </div>
+
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-orange-100 rounded-lg">
+                  <FiTruck className="w-6 h-6 text-orange-600" />
+                </div>
+              </div>
+              <div className="text-3xl font-bold text-gray-900">
+                {vehicleStats.vehiculesEnMaintenance}
+              </div>
+              <div className="text-sm text-gray-600">Maintenance</div>
+            </div>
+          </div>
+
+          {/* ⬅️ AJOUTER cette section - Actions rapides */}
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Actions rapides
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Link
+                to="/my-vehicles/add"
+                className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-600 hover:bg-teal-50 transition"
+              >
+                <div className="p-3 bg-teal-100 rounded-lg">
+                  <FiPlus className="w-6 h-6 text-teal-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">Ajouter un véhicule</div>
+                  <div className="text-sm text-gray-600">Élargissez votre flotte</div>
+                </div>
+              </Link>
+
+              <Link
+                to="/my-vehicles"
+                className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-600 hover:bg-teal-50 transition"
+              >
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <FiTruck className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">Gérer mes véhicules</div>
+                  <div className="text-sm text-gray-600">Voir toute la flotte</div>
+                </div>
+              </Link>
+
+              <Link
+                to="/profile"
+                className="flex items-center space-x-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-teal-600 hover:bg-teal-50 transition"
+              >
+                <div className="p-3 bg-purple-100 rounded-lg">
+                  <FiTruck className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <div className="font-medium text-gray-900">Mon profil</div>
+                  <div className="text-sm text-gray-600">Gérer mes informations</div>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+
+          {/* ⬅️ AJOUTER cette section - Véhicules récents */}
+          {recentVehicles.length > 0 && (
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Véhicules récents
+                </h3>
+                <Link
+                  to="/my-vehicles"
+                  className="text-sm text-teal-600 hover:text-teal-700"
+                >
+                  Voir tout
+                </Link>
+              </div>
+
+              <div className="space-y-4">
+                {recentVehicles.map((vehicule) => (
+                  <Link
+                    key={vehicule.id}
+                    to={`/my-vehicles/edit/${vehicule.id}`}
+                    className="flex items-center space-x-4 p-4 border border-gray-200 rounded-lg hover:border-teal-600 hover:bg-teal-50 transition"
+                  >
+                    <div className="w-20 h-20 flex-shrink-0">
+                      {vehicule.image_principale ? (
+                        <img
+                          src={vehicule.image_principale}
+                          alt={vehicule.nom_complet}
+                          className="w-full h-full object-cover rounded"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center text-2xl">
+                          🚗
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-900 mb-1">
+                        {vehicule.nom_complet}
+                      </h4>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                        <span>{vehicule.type_vehicule}</span>
+                        <span>•</span>
+                        <span>{vehicule.transmission}</span>
+                        <span>•</span>
+                        <span className={`px-2 py-1 rounded text-xs ${vehicule.statut === 'DISPONIBLE'
+                            ? 'bg-green-100 text-green-800'
+                            : vehicule.statut === 'LOUE'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-orange-100 text-orange-800'
+                          }`}>
+                          {vehicule.statut}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-teal-600">
+                        {parseInt(vehicule.prix_jour).toLocaleString('fr-FR')} FCFA
+                      </div>
+                      <div className="text-xs text-gray-500">par jour</div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+
 
           {/* Graphique + Calendar/Gauge - Grid 2 colonnes */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
