@@ -12,7 +12,7 @@ export default function MyVehiculesPage() {
   const [vehicules, setVehicules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Filtres
   const [filters, setFilters] = useState({
     search: '',
@@ -169,7 +169,7 @@ export default function MyVehiculesPage() {
                     <span className="text-6xl">🚗</span>
                   </div>
                 )}
-                
+
                 {/* Badge statut */}
                 <div className="absolute top-2 right-2">
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatutBadge(vehicule.statut)}`}>
@@ -183,7 +183,7 @@ export default function MyVehiculesPage() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   {vehicule.nom_complet}
                 </h3>
-                
+
                 <div className="space-y-2 text-sm text-gray-600 mb-4">
                   <div className="flex items-center justify-between">
                     <span>{vehicule.type_vehicule}</span>
@@ -193,9 +193,32 @@ export default function MyVehiculesPage() {
                     <span>{vehicule.type_carburant}</span>
                     <span>{vehicule.nombre_places} places</span>
                   </div>
-                  <div className="text-lg font-bold text-teal-600">
-                    {parseInt(vehicule.prix_jour).toLocaleString('fr-FR')} FCFA/jour
+                  <div className="space-y-1">
+                    {vehicule.est_disponible_location && vehicule.prix_location_jour && (
+                      <div className="text-lg font-bold text-blue-600">
+                        {parseInt(vehicule.prix_location_jour).toLocaleString('fr-FR')} FCFA/jour
+                      </div>
+                    )}
+                    {vehicule.est_disponible_vente && vehicule.prix_vente && (
+                      <div className="text-lg font-bold text-teal-600">
+                        {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
+                      </div>
+                    )}
                   </div>
+                </div>
+
+                {/* Badges type d'offre */}
+                <div className="flex items-center space-x-2 mt-2">
+                  {vehicule.est_disponible_vente && (
+                    <span className="px-2 py-1 bg-teal-100 text-teal-800 text-xs rounded">
+                      🏷️ Vente
+                    </span>
+                  )}
+                  {vehicule.est_disponible_location && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                      📅 Location
+                    </span>
+                  )}
                 </div>
 
                 {/* Actions */}
@@ -208,7 +231,7 @@ export default function MyVehiculesPage() {
                     <FiEye className="w-4 h-4" />
                     <span className="text-sm">Voir</span>
                   </button>
-                  
+
                   <button
                     onClick={() => navigate(`/my-vehicules/edit/${vehicule.id}`)}
                     className="flex-1 flex items-center justify-center space-x-1 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
@@ -217,7 +240,7 @@ export default function MyVehiculesPage() {
                     <FiEdit2 className="w-4 h-4" />
                     <span className="text-sm">Modifier</span>
                   </button>
-                  
+
                   <button
                     onClick={() => handleDelete(vehicule.id)}
                     className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition"

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import vehiculeService from '../../services/vehiculeService';
-import { 
-  FiArrowLeft, FiMapPin, FiCheck, FiCalendar, 
-  FiUser, FiPhone, FiMail, FiChevronLeft, FiChevronRight 
+import {
+  FiArrowLeft, FiMapPin, FiCheck, FiCalendar,
+  FiUser, FiPhone, FiMail, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
 
 export default function VehiculeDetailPage() {
@@ -149,11 +149,10 @@ export default function VehiculeDetailPage() {
                           <button
                             key={index}
                             onClick={() => setCurrentImageIndex(index)}
-                            className={`w-2 h-2 rounded-full ${
-                              index === currentImageIndex
-                                ? 'bg-white'
-                                : 'bg-white/50'
-                            }`}
+                            className={`w-2 h-2 rounded-full ${index === currentImageIndex
+                              ? 'bg-white'
+                              : 'bg-white/50'
+                              }`}
                           />
                         ))}
                       </div>
@@ -173,11 +172,10 @@ export default function VehiculeDetailPage() {
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`flex-shrink-0 ${
-                        index === currentImageIndex
-                          ? 'ring-2 ring-teal-600'
-                          : ''
-                      }`}
+                      className={`flex-shrink-0 ${index === currentImageIndex
+                        ? 'ring-2 ring-teal-600'
+                        : ''
+                        }`}
                     >
                       <img
                         src={image}
@@ -297,15 +295,61 @@ export default function VehiculeDetailPage() {
           {/* Colonne droite - Réservation */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+              {/* Prix */}
               <div className="mb-6">
-                <div className="text-3xl font-bold text-teal-600 mb-1">
-                  {parseInt(vehicule.prix_jour).toLocaleString('fr-FR')} FCFA
-                </div>
-                <div className="text-sm text-gray-600">par jour</div>
+                {/* Afficher prix location si disponible */}
+                {vehicule.est_disponible_location && vehicule.prix_location_jour && (
+                  <>
+                    <div className="text-3xl font-bold text-blue-600 mb-1">
+                      {parseInt(vehicule.prix_location_jour).toLocaleString('fr-FR')} FCFA
+                    </div>
+                    <div className="text-sm text-gray-600">par jour</div>
+
+                    {vehicule.est_disponible_vente && vehicule.prix_vente && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="text-2xl font-bold text-teal-600">
+                          {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
+                        </div>
+                        <div className="text-xs text-gray-600">prix de vente</div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Afficher uniquement prix vente si pas de location */}
+                {!vehicule.est_disponible_location && vehicule.est_disponible_vente && vehicule.prix_vente && (
+                  <>
+                    <div className="text-3xl font-bold text-teal-600 mb-1">
+                      {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
+                    </div>
+                    <div className="text-sm text-gray-600">prix de vente</div>
+                  </>
+                )}
+
+                {/* Si aucun prix */}
+                {!vehicule.prix_location_jour && !vehicule.prix_vente && (
+                  <div className="text-xl text-gray-500">
+                    Prix non disponible
+                  </div>
+                )}
               </div>
 
-              {/* Caution */}
-              {vehicule.caution > 0 && (
+              {/* Badges type d'offre */}
+              <div className="mb-6 flex flex-wrap gap-2">
+                {vehicule.est_disponible_vente && (
+                  <span className="inline-flex items-center px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium">
+                    🏷️ Disponible à la vente
+                  </span>
+                )}
+                {vehicule.est_disponible_location && (
+                  <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                    📅 Disponible à la location
+                  </span>
+                )}
+              </div>
+
+              {/* Caution (uniquement si location) */}
+              {vehicule.est_disponible_location && vehicule.caution > 0 && (
                 <div className="mb-6 p-3 bg-gray-50 rounded-lg">
                   <div className="text-sm text-gray-600">Caution</div>
                   <div className="text-lg font-semibold text-gray-900">
@@ -326,10 +370,19 @@ export default function VehiculeDetailPage() {
               <div className="space-y-3 mb-6">
                 {user ? (
                   <>
-                    <button className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium">
-                      Réserver maintenant
-                    </button>
-                    <button className="w-full px-6 py-3 border border-teal-600 text-teal-600 rounded-lg hover:bg-teal-50 font-medium">
+                    {vehicule.est_disponible_location && (
+                      <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+                        Réserver pour une location
+                      </button>
+                    )}
+
+                    {vehicule.est_disponible_vente && (
+                      <button className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium">
+                        Faire une offre d'achat
+                      </button>
+                    )}
+
+                    <button className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
                       Demander un devis
                     </button>
                   </>
@@ -338,7 +391,7 @@ export default function VehiculeDetailPage() {
                     to="/login"
                     className="block w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium text-center"
                   >
-                    Se connecter pour réserver
+                    Se connecter pour {vehicule.est_disponible_location ? 'réserver' : 'acheter'}
                   </Link>
                 )}
               </div>

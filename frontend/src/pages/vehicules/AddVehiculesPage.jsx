@@ -32,7 +32,10 @@ export default function AddVehiculesPage() {
     kilometrage: 0,
 
     // Étape 3 : Tarification
-    prix_jour: '',
+    est_disponible_vente: false,
+    est_disponible_location: false,
+    prix_vente: '',
+    prix_location_jour: '',
     caution: '',
 
     // Étape 4 : Description
@@ -126,8 +129,21 @@ export default function AddVehiculesPage() {
         }
         break;
       case 2: // Tarification
-        if (!formData.prix_jour || formData.prix_jour < 5000) {
-          setError('Le prix doit être d\'au moins 5000 FCFA');
+        // Au moins un type d'offre
+        if (!formData.est_disponible_vente && !formData.est_disponible_location) {
+          setError('Vous devez sélectionner au moins un type d\'offre');
+          return false;
+        }
+
+        // Si vente : prix vente obligatoire
+        if (formData.est_disponible_vente && (!formData.prix_vente || formData.prix_vente < 100000)) {
+          setError('Le prix de vente doit être d\'au moins 100 000 FCFA');
+          return false;
+        }
+
+        // Si location : prix location obligatoire
+        if (formData.est_disponible_location && (!formData.prix_location_jour || formData.prix_location_jour < 5000)) {
+          setError('Le prix de location doit être d\'au moins 5 000 FCFA');
           return false;
         }
         break;
@@ -166,16 +182,24 @@ export default function AddVehiculesPage() {
       const formDataToSend = new FormData();
 
       // Ajouter les champs texte
+      // Ajouter les champs texte
       Object.keys(formData).forEach(key => {
         if (key !== 'image_principale' && key !== 'images_supplementaires' && key !== 'equipements') {
-          // ✅ AJOUTER : Convertir virgules en points pour prix_jour et caution
-          if (key === 'prix_jour' || key === 'caution') {
-            formDataToSend.append(key, String(formData[key]).replace(',', '.'));
-          } else {
+          // Convertir virgules en points pour les prix
+          if (key === 'prix_location_jour' || key === 'caution' || key === 'prix_vente') {
+            const value = formData[key];
+            if (value !== '' && value !== null && value !== undefined) {
+              formDataToSend.append(key, String(value).replace(',', '.'));
+            }
+          } else if (typeof formData[key] === 'boolean') {
+            formDataToSend.append(key, formData[key]);
+          } else if (formData[key] !== '' && formData[key] !== null && formData[key] !== undefined) {
             formDataToSend.append(key, formData[key]);
           }
         }
       });
+
+
 
       // Ajouter équipements (JSON)
       formDataToSend.append('equipements', JSON.stringify(formData.equipements));
@@ -216,8 +240,8 @@ export default function AddVehiculesPage() {
                 <div className="flex flex-col items-center flex-1">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center text-xl ${index <= currentStep
-                        ? 'bg-teal-600 text-white'
-                        : 'bg-gray-200 text-gray-500'
+                      ? 'bg-teal-600 text-white'
+                      : 'bg-gray-200 text-gray-500'
                       }`}
                   >
                     {index < currentStep ? <FiCheck /> : step.icon}
@@ -462,45 +486,133 @@ export default function AddVehiculesPage() {
             {currentStep === 2 && (
               <div className="space-y-6">
                 <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                  Tarification
+                  Type d'offre et tarification
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Prix par jour (FCFA) <span className="text-red-500">*</span>
+                {/* Type d'offre */}
+                <div className="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Type d'offre <span className="text-red-500">*</span>
+                  </label>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Sélectionnez au moins un type d'offre
+                  </p>
+                  <div className="space-y-3">
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.est_disponible_vente}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          est_disponible_vente: e.target.checked
+                        })}
+                        className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-teal-600 transition">
+                        🏷️ Disponible à la vente
+                      </span>
                     </label>
-                    <input
-                      type="number"
-                      name="prix_jour"
-                      value={formData.prix_jour}
-                      onChange={handleChange}
-                      required
-                      min="5000"
-                      step="1000"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Ex: 25000"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Minimum 5 000 FCFA</p>
-                  </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Caution (FCFA)
+                    <label className="flex items-center space-x-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.est_disponible_location}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          est_disponible_location: e.target.checked
+                        })}
+                        className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-teal-600 transition">
+                        📅 Disponible à la location
+                      </span>
                     </label>
-                    <input
-                      type="number"
-                      name="caution"
-                      value={formData.caution}
-                      onChange={handleChange}
-                      min="0"
-                      step="10000"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                      placeholder="Ex: 100000"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Optionnel</p>
                   </div>
                 </div>
+
+                {/* Message d'erreur si aucun type sélectionné */}
+                {!formData.est_disponible_vente && !formData.est_disponible_location && (
+                  <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg flex items-center">
+                    <span className="mr-2">⚠️</span>
+                    <span className="text-sm">Vous devez sélectionner au moins un type d'offre</span>
+                  </div>
+                )}
+
+                {/* Prix de VENTE (conditionnel) */}
+                {formData.est_disponible_vente && (
+                  <div className="bg-white border-2 border-teal-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">💰</span>
+                      Prix de vente
+                    </h4>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Prix de vente (FCFA) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="prix_vente"
+                        value={formData.prix_vente}
+                        onChange={handleChange}
+                        required={formData.est_disponible_vente}
+                        min="100000"
+                        step="100000"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        placeholder="Ex: 15000000"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        💡 Prix de vente définitif du véhicule (minimum 100 000 FCFA)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Prix de LOCATION (conditionnel) */}
+                {formData.est_disponible_location && (
+                  <div className="bg-white border-2 border-blue-200 rounded-lg p-6">
+                    <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <span className="text-2xl mr-2">📅</span>
+                      Tarifs de location
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Prix par jour (FCFA) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="prix_location_jour"
+                          value={formData.prix_location_jour}
+                          onChange={handleChange}
+                          required={formData.est_disponible_location}
+                          min="5000"
+                          step="1000"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          placeholder="Ex: 25000"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Minimum 5 000 FCFA</p>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Caution (FCFA) <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="number"
+                          name="caution"
+                          value={formData.caution}
+                          onChange={handleChange}
+                          required={formData.est_disponible_location}
+                          min="10000"
+                          step="5000"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                          placeholder="Ex: 100000"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Montant de la caution</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

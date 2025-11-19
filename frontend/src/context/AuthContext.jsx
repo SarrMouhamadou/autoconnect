@@ -128,6 +128,14 @@ export const AuthProvider = ({ children }) => {
     return !!user && authService.isAuthenticated();
   };
 
+  const refreshUser = async () => {
+  try {
+    const userData = await authService.getProfile();
+    setUser(userData);
+  } catch (error) {
+    console.error('Erreur lors du rafraîchissement du profil:', error);
+  }
+};
   /**
    * Vérifier le type d'utilisateur
    */
@@ -144,6 +152,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     updateProfile,
+    refreshUser,
     isAuthenticated,
     isClient,
     isConcessionnaire,
@@ -152,7 +161,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value=
+    {value}>
       {children}
     </AuthContext.Provider>
   );

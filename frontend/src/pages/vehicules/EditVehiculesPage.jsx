@@ -22,12 +22,14 @@ export default function EditVehiculesPage() {
     nombre_portes: 4,
     climatisation: true,
     kilometrage: 0,
-    prix_jour: '',
+    est_disponible_vente: false,
+    est_disponible_location: false,
+    prix_vente: '',
+    prix_location_jour: '',
     caution: '',
     description: '',
     equipements: [],
     statut: 'DISPONIBLE',
-    est_disponible: true,
   });
 
   const [newImages, setNewImages] = useState([]);
@@ -53,12 +55,14 @@ export default function EditVehiculesPage() {
         nombre_portes: data.nombre_portes || 4,
         climatisation: data.climatisation !== undefined ? data.climatisation : true,
         kilometrage: data.kilometrage || 0,
-        prix_jour: data.prix_jour || '',
+        est_disponible_vente: data.est_disponible_vente || false,
+        est_disponible_location: data.est_disponible_location || false,
+        prix_vente: data.prix_vente || '',
+        prix_location_jour: data.prix_location_jour || '',
         caution: data.caution || '',
         description: data.description || '',
         equipements: data.equipements || [],
         statut: data.statut || 'DISPONIBLE',
-        est_disponible: data.est_disponible !== undefined ? data.est_disponible : true,
       });
     } catch (err) {
       setError(err.message);
@@ -115,10 +119,11 @@ export default function EditVehiculesPage() {
 
       const dataToSend = {
         ...formData,
-        prix_jour: String(formData.prix_jour).replace(',', '.'),
-        caution: String(formData.caution).replace(',', '.'),
+        prix_location_jour: formData.prix_location_jour ? String(formData.prix_location_jour).replace(',', '.') : null,
+        prix_vente: formData.prix_vente ? String(formData.prix_vente).replace(',', '.') : null,
+        caution: formData.caution ? String(formData.caution).replace(',', '.') : null,
       };
-      
+
       // Mise à jour des données
       await vehiculeService.updateVehicule(id, formData);
 
@@ -282,41 +287,105 @@ export default function EditVehiculesPage() {
             </div>
 
             {/* Tarification */}
+            {/* Tarification */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Tarification
+                Type d'offre et tarification
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Prix par jour (FCFA)
-                  </label>
-                  <input
-                    type="number"
-                    name="prix_jour"
-                    value={formData.prix_jour}
-                    onChange={handleChange}
-                    min="5000"
-                    step="1000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Caution (FCFA)
+              {/* Type d'offre */}
+              <div className="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg mb-4">
+                <div className="space-y-3">
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.est_disponible_vente}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        est_disponible_vente: e.target.checked
+                      })}
+                      className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      🏷️ Disponible à la vente
+                    </span>
                   </label>
-                  <input
-                    type="number"
-                    name="caution"
-                    value={formData.caution}
-                    onChange={handleChange}
-                    min="0"
-                    step="10000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+
+                  <label className="flex items-center space-x-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.est_disponible_location}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        est_disponible_location: e.target.checked
+                      })}
+                      className="w-5 h-5 text-teal-600 border-gray-300 rounded focus:ring-teal-500"
+                    />
+                    <span className="text-sm font-medium text-gray-700">
+                      📅 Disponible à la location
+                    </span>
+                  </label>
                 </div>
               </div>
+
+              {/* Prix de vente */}
+              {formData.est_disponible_vente && (
+                <div className="mb-4 p-4 bg-white border-2 border-teal-200 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">💰 Prix de vente</h4>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Prix de vente (FCFA)
+                    </label>
+                    <input
+                      type="number"
+                      name="prix_vente"
+                      value={formData.prix_vente}
+                      onChange={handleChange}
+                      min="100000"
+                      step="100000"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Prix de location */}
+              {formData.est_disponible_location && (
+                <div className="p-4 bg-white border-2 border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-gray-900 mb-3">📅 Tarifs de location</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Prix par jour (FCFA)
+                      </label>
+                      <input
+                        type="number"
+                        name="prix_location_jour"
+                        value={formData.prix_location_jour}
+                        onChange={handleChange}
+                        min="5000"
+                        step="1000"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Caution (FCFA)
+                      </label>
+                      <input
+                        type="number"
+                        name="caution"
+                        value={formData.caution}
+                        onChange={handleChange}
+                        min="0"
+                        step="10000"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -336,38 +405,26 @@ export default function EditVehiculesPage() {
             {/* Statut */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Disponibilité
+                Statut du véhicule
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Statut
-                  </label>
-                  <select
-                    name="statut"
-                    value={formData.statut}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  >
-                    <option value="DISPONIBLE">Disponible</option>
-                    <option value="LOUE">Loué</option>
-                    <option value="MAINTENANCE">En maintenance</option>
-                    <option value="INDISPONIBLE">Indisponible</option>
-                  </select>
-                </div>
-
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    name="est_disponible"
-                    checked={formData.est_disponible}
-                    onChange={handleChange}
-                    className="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                  />
-                  <label className="ml-2 block text-sm text-gray-700">
-                    Disponible à la location
-                  </label>
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Statut
+                </label>
+                <select
+                  name="statut"
+                  value={formData.statut}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="DISPONIBLE">Disponible</option>
+                  <option value="LOUE">Loué</option>
+                  <option value="MAINTENANCE">En maintenance</option>
+                  <option value="INDISPONIBLE">Indisponible</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Le statut "Loué" sera géré automatiquement lors d'une location
+                </p>
               </div>
             </div>
 

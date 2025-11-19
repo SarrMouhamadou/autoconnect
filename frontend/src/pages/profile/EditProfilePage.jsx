@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Layout from '../../components/layout/Layout';
-import ProfileProgressBar from '../../components/profile/ProfileProgressBar';  // ← AJOUTER
-import authService from '../../services/authService';  // Déjà présent normalement
+import ProfileProgressBar from '../../components/profile/ProfileProgressBar';  
+import authService from '../../services/authService';  
+import { getMediaUrl } from '../../utils/helpers';
 
 export default function EditProfilePage() {
   const { user, updateProfile, isConcessionnaire } = useAuth();
@@ -250,7 +251,7 @@ export default function EditProfilePage() {
               <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
                 {photoPreview ? (
                   <img
-                    src={photoPreview}
+                    src={photoPreview.startsWith('blob:') ? photoPreview : getMediaUrl(photoPreview)}  // ✅ Gérer blob et URL
                     alt="Preview"
                     className="w-full h-full object-cover"
                   />

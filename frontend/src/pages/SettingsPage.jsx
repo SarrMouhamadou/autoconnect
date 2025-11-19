@@ -1,23 +1,27 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
+import authService from '../services/authService';
+import { getMediaUrl, getInitials } from '../utils/helpers';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiCamera, FiLock, FiCheck } from 'react-icons/fi';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState('personal');
-  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  
+  // ✅ AJOUTER : États pour la photo
+  const [photoFile, setPhotoFile] = useState(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
   
   const [formData, setFormData] = useState({
-    prenom: user?.prenom || 'Iba Gaye',
-    nom: user?.nom || 'SARR',
-    email: user?.email || 'igsarr@gmail.com',
-    telephone: user?.telephone || '+221778004342',
-    adresse: user?.adresse || 'Mérina Gueye',
-    ville: user?.ville || 'Thies',
-    code_postal: user?.code_postal || '12000',
-    date_naissance: '1995-02-01',
-    sexe: 'male'
+    prenom: user?.prenom || '',
+    nom: user?.nom || '',
+    email: user?.email || '',
+    telephone: user?.telephone || '',
+    adresse: user?.adresse || '',
+    ville: user?.ville || '',
+    code_postal: user?.code_postal || '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -40,26 +44,87 @@ export default function SettingsPage() {
     });
   };
 
+  // ✅ AJOUTER : Gérer le changement de photo
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    
+    if (file) {
+      // Vérifier la taille (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La photo ne doit pas dépasser 5 MB');
+        return;
+      }
+
+      // Vérifier le type
+      if (!file.type.startsWith('image/')) {
+        alert('Le fichier doit être une image');
+        return;
+      }
+
+      setPhotoFile(file);
+
+      // Créer une preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveProfile = async (e) => {
     e.preventDefault();
-    console.log('Mise à jour du profil:', formData);
-    setIsEditing(false);
-    alert('Profil mis à jour avec succès !');
+    
+    try {
+      setLoading(true);
+
+      // Créer FormData
+      const formDataToSend = new FormData();
+
+      // Ajouter les champs texte
+      Object.keys(formData).forEach(key => {
+        const value = formData[key];
+        if (value !== '' && value !== null && value !== undefined) {
+          formDataToSend.append(key, value);
+        }
+      });
+
+      // Ajouter la photo si elle existe
+      if (photoFile) {
+        formDataToSend.append('photo_profil', photoFile);
+      }
+
+      // Envoyer la requête
+      await authService.updateProfile(formDataToSend);
+
+      // Mettre à jour le contexte
+      await refreshUser();
+
+      // Réinitialiser les états
+      setPhotoFile(null);
+      setPhotoPreview(null);
+
+      alert('Profil mis à jour avec succès !');
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors de la mise à jour du profil');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDiscardChanges = () => {
     setFormData({
-      prenom: user?.prenom || 'Iba Gaye',
-      nom: user?.nom || 'SARR',
-      email: user?.email || 'igsarr@gmail.com',
-      telephone: user?.telephone || '+221778004342',
-      adresse: user?.adresse || 'Mérina Gueye',
-      ville: user?.ville || 'Thies',
-      code_postal: user?.code_postal || '12000',
-      date_naissance: '1995-02-01',
-      sexe: 'male'
+      prenom: user?.prenom || '',
+      nom: user?.nom || '',
+      email: user?.email || '',
+      telephone: user?.telephone || '',
+      adresse: user?.adresse || '',
+      ville: user?.ville || '',
+      code_postal: user?.code_postal || '',
     });
-    setIsEditing(false);
+    setPhotoFile(null);
+    setPhotoPreview(null);
   };
 
   const handleChangePassword = async (e) => {
@@ -69,14 +134,34 @@ export default function SettingsPage() {
       alert('Les mots de passe ne correspondent pas');
       return;
     }
+
+    if (passwordData.newPassword.length < 8) {
+      alert('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
     
-    console.log('Changement de mot de passe');
-    setPasswordData({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-    alert('Mot de passe modifié avec succès !');
+    try {
+      setLoading(true);
+      
+      await authService.changePassword(
+        passwordData.currentPassword,
+        passwordData.newPassword,
+        passwordData.confirmPassword
+      );
+
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      alert('Mot de passe modifié avec succès !');
+    } catch (error) {
+      console.error('Erreur:', error);
+      alert('Erreur lors du changement de mot de passe');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -90,31 +175,57 @@ export default function SettingsPage() {
               {/* Photo de profil */}
               <div className="relative mb-6 flex justify-center">
                 <div className="relative">
-                  {user?.photo_profil ? (
+                  {/* ✅ Afficher preview ou photo actuelle */}
+                  {photoPreview ? (
                     <img
-                      src={user.photo_profil}
+                      src={photoPreview}
+                      alt="Preview"
+                      className="w-32 h-32 rounded-full object-cover border-4 border-teal-100"
+                    />
+                  ) : user?.photo_profil ? (
+                    <img
+                      src={getMediaUrl(user.photo_profil)}
                       alt="Profile"
                       className="w-32 h-32 rounded-full object-cover border-4 border-teal-100"
                     />
                   ) : (
                     <div className="w-32 h-32 rounded-full bg-gradient-to-br from-teal-600 to-teal-800 flex items-center justify-center text-white text-4xl font-bold border-4 border-teal-100">
-                      {user?.prenom?.[0]}{user?.nom?.[0]}
+                      {getInitials(user?.prenom, user?.nom)}
                     </div>
                   )}
-                  <button className="absolute bottom-0 right-0 w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center text-white hover:bg-orange-600 transition shadow-lg border-4 border-white">
+                  
+                  {/* ✅ Input caché + label comme bouton */}
+                  <input
+                    type="file"
+                    id="photo_profil_input"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                  <label
+                    htmlFor="photo_profil_input"
+                    className="absolute bottom-0 right-0 w-10 h-10 bg-teal-600 rounded-full flex items-center justify-center text-white hover:bg-teal-700 transition shadow-lg border-4 border-white cursor-pointer"
+                  >
                     <FiCamera className="w-5 h-5" />
-                  </button>
+                  </label>
                 </div>
               </div>
 
               {/* Nom et rôle */}
               <div className="text-center mb-6">
                 <h3 className="text-xl font-bold text-gray-900">
-                  {formData.prenom} {formData.nom}
+                  {user?.prenom} {user?.nom}
                 </h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  {user?.type_utilisateur === 'CLIENT' ? 'Client' : 'Concessionnaire'}
+                  {user?.type_utilisateur === 'CLIENT' ? 'Client' : 
+                   user?.type_utilisateur === 'CONCESSIONNAIRE' ? 'Concessionnaire' : 
+                   'Administrateur'}
                 </p>
+                {photoFile && (
+                  <p className="text-xs text-green-600 mt-2">
+                    ✅ Nouvelle photo sélectionnée
+                  </p>
+                )}
               </div>
 
               {/* Menu latéral */}
@@ -155,34 +266,6 @@ export default function SettingsPage() {
                 <form onSubmit={handleSaveProfile}>
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Personal Information</h2>
 
-                  {/* Sexe - Radio buttons */}
-                  <div className="mb-6">
-                    <div className="flex items-center space-x-6">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="sexe"
-                          value="male"
-                          checked={formData.sexe === 'male'}
-                          onChange={handleChange}
-                          className="w-4 h-4 text-teal-600 border-gray-300 focus:ring-teal--00"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Male</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="sexe"
-                          value="female"
-                          checked={formData.sexe === 'female'}
-                          onChange={handleChange}
-                          className="w-4 h-4 text-teal-500 border-gray-300 focus:ring-teal-600"
-                        />
-                        <span className="text-sm font-medium text-gray-700">Female</span>
-                      </label>
-                    </div>
-                  </div>
-
                   {/* Prénom et Nom */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
@@ -194,6 +277,7 @@ export default function SettingsPage() {
                         name="prenom"
                         value={formData.prenom}
                         onChange={handleChange}
+                        required
                         className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
                       />
                     </div>
@@ -207,6 +291,7 @@ export default function SettingsPage() {
                         name="nom"
                         value={formData.nom}
                         onChange={handleChange}
+                        required
                         className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
                       />
                     </div>
@@ -223,13 +308,28 @@ export default function SettingsPage() {
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition pr-24"
+                        disabled
+                        className="w-full px-4 py-3 bg-gray-100 border-0 rounded-lg text-gray-500 cursor-not-allowed pr-24"
                       />
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center space-x-1 text-green-600 text-sm font-medium">
                         <FiCheck className="w-4 h-4" />
                         <span>Verified</span>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Téléphone */}
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-600 mb-2">
+                      Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="telephone"
+                      value={formData.telephone}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
+                    />
                   </div>
 
                   {/* Adresse */}
@@ -246,54 +346,19 @@ export default function SettingsPage() {
                     />
                   </div>
 
-                  {/* Téléphone et Date de naissance */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Phone Number
-                      </label>
-                      <input
-                        type="tel"
-                        name="telephone"
-                        value={formData.telephone}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Date of Birth
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          name="date_naissance"
-                          value={formData.date_naissance}
-                          onChange={handleChange}
-                          className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Ville et Code postal */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-2">
-                        Location
+                        City
                       </label>
-                      <select
+                      <input
+                        type="text"
                         name="ville"
                         value={formData.ville}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition appearance-none"
-                      >
-                        <option value="Thies">Thies</option>
-                        <option value="Dakar">Dakar</option>
-                        <option value="Saint-Louis">Saint-Louis</option>
-                        <option value="Ziguinchor">Ziguinchor</option>
-                      </select>
+                        className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
+                      />
                     </div>
 
                     <div>
@@ -305,7 +370,7 @@ export default function SettingsPage() {
                         name="code_postal"
                         value={formData.code_postal}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-600 focus:bg-white transition"
+                        className="w-full px-4 py-3 bg-gray-50 border-0 rounded-lg focus:ring-2 focus:ring-teal-500 focus:bg-white transition"
                       />
                     </div>
                   </div>
@@ -315,15 +380,17 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={handleDiscardChanges}
-                      className="flex-1 py-3 px-6 border-2 border-teal-500 text-teal-500 rounded-lg hover:bg-gray-50 transition font-medium"
+                      disabled={loading}
+                      className="flex-1 py-3 px-6 border-2 border-teal-500 text-teal-500 rounded-lg hover:bg-gray-50 transition font-medium disabled:opacity-50"
                     >
                       Discard Changes
                     </button>
                     <button
                       type="submit"
-                      className="flex-1 py-3 px-6 bg-teal-600 text-black rounded-lg hover:bg-gray-100 transition font-medium shadow-lg"
+                      disabled={loading}
+                      className="flex-1 py-3 px-6 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium shadow-lg disabled:opacity-50"
                     >
-                      Save Changes
+                      {loading ? 'Saving...' : 'Save Changes'}
                     </button>
                   </div>
                 </form>
@@ -390,9 +457,10 @@ export default function SettingsPage() {
                     <div className="mt-8">
                       <button
                         type="submit"
-                        className="w-full py-3 px-6 bg-teal-600 text-white rounded-lg hover:bg-teal-600 transition font-medium shadow-lg"
+                        disabled={loading}
+                        className="w-full py-3 px-6 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition font-medium shadow-lg disabled:opacity-50"
                       >
-                        Change Password
+                        {loading ? 'Changing...' : 'Change Password'}
                       </button>
                     </div>
                   </div>

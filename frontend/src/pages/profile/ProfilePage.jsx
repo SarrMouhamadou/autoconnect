@@ -5,6 +5,7 @@ import Layout from '../../components/layout/Layout';
 import ProfileCompletionBanner from '../../components/profile/ProfileCompletionBanner';
 import ProfileProgressBar from '../../components/profile/ProfileProgressBar';
 import authService from '../../services/authService';
+import { getMediaUrl, getInitials } from '../../utils/helpers';
 
 export default function ProfilePage() {
     const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
@@ -263,13 +264,13 @@ export default function ProfilePage() {
                                 <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center overflow-hidden">
                                     {user?.photo_profil ? (
                                         <img
-                                            src={user.photo_profil}
+                                            src={getMediaUrl(user.photo_profil)}
                                             alt="Profile"
                                             className="w-full h-full object-cover"
                                         />
                                     ) : (
                                         <span className="text-4xl text-blue-600 font-bold">
-                                            {user?.prenom?.[0]}{user?.nom?.[0]}
+                                            {getInitials(user?.prenom, user?.nom)}
                                         </span>
                                     )}
                                 </div>

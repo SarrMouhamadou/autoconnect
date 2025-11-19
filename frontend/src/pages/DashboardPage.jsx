@@ -244,6 +244,7 @@ export default function DashboardPage() {
 
 
           {/* ⬅️ AJOUTER cette section - Véhicules récents */}
+          {/* ⬅️ SECTION - Véhicules récents */}
           {recentVehicles.length > 0 && (
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -297,13 +298,43 @@ export default function DashboardPage() {
                           {vehicule.statut}
                         </span>
                       </div>
+
+                      {/* ✅ AJOUTER : Badges vente/location */}
+                      <div className="flex items-center space-x-2 mt-2">
+                        {vehicule.est_disponible_vente && (
+                          <span className="px-2 py-1 bg-teal-100 text-teal-800 text-xs rounded">
+                            🏷️ Vente
+                          </span>
+                        )}
+                        {vehicule.est_disponible_location && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                            📅 Location
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-lg font-bold text-teal-600">
-                        {parseInt(vehicule.prix_jour).toLocaleString('fr-FR')} FCFA
-                      </div>
-                      <div className="text-xs text-gray-500">par jour</div>
+                      {/* ✅ CORRIGER : Afficher prix selon le type */}
+                      {vehicule.est_disponible_location && vehicule.prix_location_jour ? (
+                        <>
+                          <div className="text-lg font-bold text-teal-600">
+                            {parseInt(vehicule.prix_location_jour).toLocaleString('fr-FR')} FCFA
+                          </div>
+                          <div className="text-xs text-gray-500">par jour</div>
+                        </>
+                      ) : vehicule.est_disponible_vente && vehicule.prix_vente ? (
+                        <>
+                          <div className="text-lg font-bold text-teal-600">
+                            {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
+                          </div>
+                          <div className="text-xs text-gray-500">prix de vente</div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-500">
+                          Prix non défini
+                        </div>
+                      )}
                     </div>
                   </Link>
                 ))}

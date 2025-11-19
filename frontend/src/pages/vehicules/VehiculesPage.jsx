@@ -46,8 +46,8 @@ export default function VehiculesPage() {
       if (filters.type_vehicule) params.type_vehicule = filters.type_vehicule;
       if (filters.type_carburant) params.type_carburant = filters.type_carburant;
       if (filters.transmission) params.transmission = filters.transmission;
-      if (filters.prix_min) params.prix_jour__gte = filters.prix_min;
-      if (filters.prix_max) params.prix_jour__lte = filters.prix_max;
+      if (filters.prix_min) params.prix_location_jour__gte = filters.prix_min;
+      if (filters.prix_max) params.prix_location_jour__lte = filters.prix_max;
       if (filters.nombre_places) params.nombre_places = filters.nombre_places;
 
       const data = await vehiculeService.getAllVehicules(params);
@@ -390,7 +390,7 @@ export default function VehiculesPage() {
                   <div className="flex items-center justify-between pt-3 border-t">
                     <div>
                       <div className="text-2xl font-bold text-teal-600">
-                        {parseInt(vehicule.prix_jour).toLocaleString('fr-FR')} FCFA
+                        {parseInt(vehicule.prix_location_jour).toLocaleString('fr-FR')} FCFA
                       </div>
                       <div className="text-xs text-gray-500">par jour</div>
                     </div>
