@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from users.models import User
+from django.core.exceptions import ValidationError
 
 
 # ========================================
@@ -152,12 +153,14 @@ class Vehicule(models.Model):
     # TARIFICATION
     # ========================================
     
-    prix_jour = models.DecimalField(
+    prix_location_jour = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
         verbose_name="Prix par jour (FCFA)",
-        help_text="Tarif de location journalier"
+        help_text="Tarif de location journalier",
+        null=True,
+        blank=True
     )
     
     caution = models.DecimalField(
@@ -165,9 +168,20 @@ class Vehicule(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(0)],
         default=0,
-        verbose_name="Montant de la caution (FCFA)"
+        verbose_name="Montant de la caution (FCFA)",
+        null=True,
+        blank=True
     )
     
+    prix_vente = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        verbose_name='Prix de vente (FCFA)',
+        null=True,
+        blank=True,
+        help_text="Laisser vide si véhicule non disponible à la vente"
+    )
+
     # ========================================
     # DESCRIPTION ET ÉQUIPEMENTS
     # ========================================
@@ -195,11 +209,14 @@ class Vehicule(models.Model):
         verbose_name="Statut"
     )
     
-    est_disponible = models.BooleanField(
-        default=True,
+    est_disponible_vente = models.BooleanField(
+        default=False,
+        verbose_name="Disponible à la vente"
+    )
+    est_disponible_location = models.BooleanField(
+        default=False,
         verbose_name="Disponible à la location"
     )
-    
     # ========================================
     # IMAGES
     # ========================================
@@ -272,8 +289,10 @@ class Vehicule(models.Model):
         ordering = ['-date_ajout']
         indexes = [
             models.Index(fields=['marque', 'modele']),
-            models.Index(fields=['statut', 'est_disponible']),
-            models.Index(fields=['prix_jour']),
+            models.Index(fields=['statut', 'est_disponible_vente']),
+            models.Index(fields=['statut', 'est_disponible_location']),
+            models.Index(fields=['prix_location_jour']),
+            models.Index(fields=['prix_vente']),
         ]
     
     def __str__(self):
@@ -283,13 +302,17 @@ class Vehicule(models.Model):
         """Retourne le nom complet du véhicule."""
         return f"{self.marque} {self.modele} {self.annee}"
     
-    def est_disponible_location(self):
+    def peut_etre_loue(self):
         """Vérifie si le véhicule est disponible à la location."""
-        return self.est_disponible and self.statut == 'DISPONIBLE'
+        return self.est_disponible_location and self.statut == 'DISPONIBLE'
     
+    def peut_etre_vendu(self):
+        """Vérifie si le véhicule peut être vendu"""
+        return self.est_disponible_vente and self.statut == 'DISPONIBLE'
+
     def calculer_prix_total(self, nombre_jours):
         """Calcule le prix total pour un nombre de jours donné."""
-        return self.prix_jour * nombre_jours
+        return self.prix_location_jour * nombre_jours
     
     def mettre_a_jour_note(self):
         """
@@ -299,7 +322,37 @@ class Vehicule(models.Model):
         # TODO: Calculer depuis les avis
         pass
 
+def clean(self):
+    """Validation personnalisée du modèle"""
 
+    
+    # Au moins un type d'offre doit être sélectionné
+    if not self.est_disponible_vente and not self.est_disponible_location:
+        raise ValidationError(
+            "Le véhicule doit être disponible à la vente et/ou à la location"
+        )
+    
+    # Si vente activée, prix vente obligatoire
+    if self.est_disponible_vente and not self.prix_vente:
+        raise ValidationError({
+            'prix_vente': "Le prix de vente est obligatoire si le véhicule est disponible à la vente"
+        })
+    
+    # Si location activée, prix location obligatoire
+    if self.est_disponible_location and not self.prix_location_jour:
+        raise ValidationError({
+            'prix_location_jour': "Le prix de location est obligatoire si le véhicule est disponible à la location"
+        })
+    
+    if errors:
+        raise ValidationError(errors)
+
+def save(self, *args, **kwargs):
+    """Override save pour appeler clean()"""
+    self.clean()
+    super().save(*args, **kwargs)
+
+    
 # ========================================
 # MODÈLE IMAGES SUPPLÉMENTAIRES
 # ========================================

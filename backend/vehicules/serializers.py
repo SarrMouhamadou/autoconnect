@@ -44,7 +44,8 @@ class VehiculeSerializer(serializers.ModelSerializer):
     
     # Champs calculés
     nom_complet = serializers.SerializerMethodField()
-    est_disponible_location = serializers.SerializerMethodField()
+    peut_etre_loue = serializers.SerializerMethodField()
+    peut_etre_vendu = serializers.SerializerMethodField()
     
     class Meta:
         model = Vehicule
@@ -64,7 +65,11 @@ class VehiculeSerializer(serializers.ModelSerializer):
             'nombre_portes', 'climatisation', 'kilometrage',
             
             # Tarifs
-            'prix_jour', 'caution',
+            'est_disponible_vente',
+            'est_disponible_location',
+            'prix_vente',
+            'prix_location_jour',
+            'caution',
             
             # Description
             'description', 'equipements',
@@ -73,7 +78,7 @@ class VehiculeSerializer(serializers.ModelSerializer):
             'image_principale', 'images',
             
             # Disponibilité
-            'statut', 'est_disponible', 'est_disponible_location',
+            'statut', 'peut_etre_loue', 'peut_etre_vendu',
             
             # Statistiques
             'nombre_locations', 'note_moyenne', 'nombre_avis',
@@ -93,9 +98,13 @@ class VehiculeSerializer(serializers.ModelSerializer):
         """Retourne le nom complet du véhicule."""
         return obj.get_nom_complet()
     
-    def get_est_disponible_location(self, obj):
-        """Vérifie si le véhicule est disponible à la location."""
-        return obj.est_disponible_location()
+    def get_peut_etre_loue(self, obj):
+        """Vérifie si le véhicule peut être loué."""
+        return obj.peut_etre_loue()
+    
+    def get_peut_etre_vendu(self, obj):
+        """Vérifie si le véhicule peut être vendu."""
+        return obj.peut_etre_vendu()
 
 
 # ========================================
@@ -113,15 +122,18 @@ class VehiculeListSerializer(serializers.ModelSerializer):
         read_only=True
     )
     nom_complet = serializers.SerializerMethodField()
-    est_disponible_location = serializers.SerializerMethodField()
+    peut_etre_loue = serializers.SerializerMethodField()
+    peut_etre_vendu = serializers.SerializerMethodField()
     
     class Meta:
         model = Vehicule
         fields = [
             'id', 'marque', 'modele', 'annee', 'nom_complet',
             'type_vehicule', 'type_carburant', 'transmission',
-            'nombre_places', 'prix_jour', 'image_principale',
-            'statut', 'est_disponible', 'est_disponible_location',
+            'nombre_places', 'prix_location_jour', 'prix_vente',
+            'image_principale', 'statut',
+            'est_disponible_vente', 'est_disponible_location',
+            'peut_etre_loue', 'peut_etre_vendu',
             'note_moyenne', 'nombre_avis', 'concessionnaire_nom',
             'date_ajout'
         ]
@@ -129,8 +141,11 @@ class VehiculeListSerializer(serializers.ModelSerializer):
     def get_nom_complet(self, obj):
         return obj.get_nom_complet()
     
-    def get_est_disponible_location(self, obj):
-        return obj.est_disponible_location()
+    def get_peut_etre_loue(self, obj):
+        return obj.peut_etre_loue()
+    
+    def get_peut_etre_vendu(self, obj):
+        return obj.peut_etre_vendu()
 
 
 # ========================================
@@ -162,7 +177,11 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
             'nombre_portes', 'climatisation', 'kilometrage',
             
             # Tarifs
-            'prix_jour', 'caution',
+            'est_disponible_vente',
+            'est_disponible_location',
+            'prix_vente',
+            'prix_location_jour',
+            'caution',
             
             # Description
             'description', 'equipements',
@@ -171,7 +190,7 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
             'image_principale', 'images_data',
             
             # Disponibilité
-            'statut', 'est_disponible',
+            'statut',
             
             # Maintenance
             'derniere_maintenance', 'prochaine_maintenance'
@@ -206,19 +225,34 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
         
         return value.upper()
     
-    def validate_prix_jour(self, value):
-        """Valider le prix."""
-        if value < 5000:
+    def validate(self, data):
+        """Validation globale"""
+        # Vérifier qu'au moins un type d'offre est sélectionné
+        if not data.get('est_disponible_vente') and not data.get('est_disponible_location'):
             raise serializers.ValidationError(
-                "Le prix journalier doit être d'au moins 5000 FCFA"
+                "Le véhicule doit être disponible à la vente et/ou à la location"
             )
         
-        if value > 1000000:
-            raise serializers.ValidationError(
-                "Le prix journalier ne peut pas dépasser 1 000 000 FCFA"
-            )
+        # Si vente : prix obligatoire
+        if data.get('est_disponible_vente') and not data.get('prix_vente'):
+            raise serializers.ValidationError({
+                'prix_vente': "Le prix de vente est obligatoire si le véhicule est disponible à la vente"
+            })
         
-        return value
+        # Si location : prix obligatoire
+        if data.get('est_disponible_location'):
+            if not data.get('prix_location_jour'):
+                raise serializers.ValidationError({
+                    'prix_location_jour': "Le prix de location est obligatoire si le véhicule est disponible à la location"
+                })
+            
+            # Valider prix location
+            if data['prix_location_jour'] < 5000:
+                raise serializers.ValidationError({
+                    'prix_location_jour': "Le prix journalier doit être d'au moins 5000 FCFA"
+                })
+        
+        return data
     
     def create(self, validated_data):
         """Créer un véhicule avec images supplémentaires."""
@@ -256,16 +290,14 @@ class VehiculeUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicule
         fields = [
-            # On ne peut pas modifier: marque, modele, annee, immatriculation
-            # (ou seulement via l'admin)
-            
             # Modifiable:
             'type_vehicule', 'couleur', 'type_carburant',
             'transmission', 'nombre_places', 'nombre_portes',
-            'climatisation', 'kilometrage', 'prix_jour', 'caution',
+            'climatisation', 'kilometrage',
+            'est_disponible_vente', 'est_disponible_location',
+            'prix_vente', 'prix_location_jour', 'caution',
             'description', 'equipements', 'image_principale',
-            'statut', 'est_disponible', 'derniere_maintenance',
-            'prochaine_maintenance'
+            'statut', 'derniere_maintenance', 'prochaine_maintenance'
         ]
     
     def validate_kilometrage(self, value):

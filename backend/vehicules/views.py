@@ -96,9 +96,10 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         'type_carburant': ['exact'],
         'transmission': ['exact'],
         'nombre_places': ['exact', 'gte', 'lte'],
-        'prix_jour': ['exact', 'gte', 'lte'],
+        'prix_location_jour': ['exact', 'gte', 'lte'],
         'statut': ['exact'],
-        'est_disponible': ['exact'],
+        'est_disponible_vente': ['exact'],
+        'est_disponible_location': ['exact'],
     }
     
     # Champs de recherche
@@ -106,7 +107,7 @@ class VehiculeViewSet(viewsets.ModelViewSet):
     
     # Tri
     ordering_fields = [
-        'prix_jour', 'annee', 'kilometrage',
+        'prix_location_jour', 'annee', 'kilometrage',
         'note_moyenne', 'nombre_locations', 'date_ajout'
     ]
     ordering = ['-date_ajout']  # Par défaut : plus récents d'abord
@@ -138,7 +139,11 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         
         # Pour les autres (clients, visiteurs), seulement les véhicules disponibles
         if self.action == 'list':
-            queryset = queryset.filter(est_disponible=True, statut='DISPONIBLE')
+            queryset = queryset.filter(
+                statut='DISPONIBLE'
+            ).filter(
+                Q(est_disponible_vente=True) | Q(est_disponible_location=True)
+            )
         
         return queryset
     
@@ -258,6 +263,11 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         methods=['post'],
         permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
     )
+    @action(
+    detail=True,
+    methods=['post'],
+    permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
+)
     def changer_statut(self, request, pk=None):
         """
         Changer le statut d'un véhicule.
@@ -265,15 +275,13 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         
         Body:
         {
-            "statut": "DISPONIBLE" | "LOUE" | "MAINTENANCE" | "INDISPONIBLE",
-            "est_disponible": true | false (optionnel)
+            "statut": "DISPONIBLE" | "LOUE" | "MAINTENANCE" | "INDISPONIBLE"
         }
         """
         
         vehicule = self.get_object()
         
         nouveau_statut = request.data.get('statut')
-        est_disponible = request.data.get('est_disponible')
         
         # Validation du statut
         statuts_valides = [choice[0] for choice in Vehicule.STATUT_CHOICES]
@@ -285,13 +293,6 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         
         # Mise à jour
         vehicule.statut = nouveau_statut
-        
-        if est_disponible is not None:
-            vehicule.est_disponible = est_disponible
-        else:
-            # Logique automatique
-            vehicule.est_disponible = nouveau_statut == 'DISPONIBLE'
-        
         vehicule.save()
         
         serializer = VehiculeSerializer(vehicule)
@@ -299,36 +300,36 @@ class VehiculeViewSet(viewsets.ModelViewSet):
             'message': 'Statut mis à jour avec succès',
             'vehicule': serializer.data
         })
-    
-    # ========================================
-    # ACTION : STATISTIQUES DU VÉHICULE
-    # ========================================
-    
-    @action(
-        detail=True,
-        methods=['get'],
-        permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
-    )
-    def statistiques(self, request, pk=None):
-        """
-        Récupérer les statistiques d'un véhicule.
-        GET /api/vehicules/{id}/statistiques/
-        """
         
-        vehicule = self.get_object()
+        # ========================================
+        # ACTION : STATISTIQUES DU VÉHICULE
+        # ========================================
         
-        # TODO: Calculer les vraies statistiques depuis les locations
-        stats = {
-            'nombre_locations': vehicule.nombre_locations,
-            'note_moyenne': float(vehicule.note_moyenne),
-            'nombre_avis': vehicule.nombre_avis,
-            'revenu_total': 0,  # À calculer depuis les locations
-            'revenu_ce_mois': 0,
-            'taux_occupation': 0,  # À calculer
-            'jours_loues': 0,
-        }
-        
-        return Response(stats)
+        @action(
+            detail=True,
+            methods=['get'],
+            permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
+        )
+        def statistiques(self, request, pk=None):
+            """
+            Récupérer les statistiques d'un véhicule.
+            GET /api/vehicules/{id}/statistiques/
+            """
+            
+            vehicule = self.get_object()
+            
+            # TODO: Calculer les vraies statistiques depuis les locations
+            stats = {
+                'nombre_locations': vehicule.nombre_locations,
+                'note_moyenne': float(vehicule.note_moyenne),
+                'nombre_avis': vehicule.nombre_avis,
+                'revenu_total': 0,  # À calculer depuis les locations
+                'revenu_ce_mois': 0,
+                'taux_occupation': 0,  # À calculer
+                'jours_loues': 0,
+            }
+            
+            return Response(stats)
 
 
 # ========================================

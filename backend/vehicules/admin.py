@@ -30,12 +30,12 @@ class VehiculeAdmin(admin.ModelAdmin):
     list_display = [
         'id', 'get_image_preview', 'get_nom_complet_display', 
         'concessionnaire', 'type_vehicule', 'get_prix_display',
-        'statut', 'est_disponible', 'nombre_locations',
-        'get_note_display', 'date_ajout'
+        'statut','prix_vente', 'nombre_locations',
+        'get_note_display', 'date_ajout','disponibilite_vente','disponibilite_location'
     ]
     
     list_filter = [
-        'statut', 'est_disponible', 'type_vehicule', 
+        'statut', 'est_disponible_vente','est_disponible_location', 'type_vehicule', 
         'type_carburant', 'transmission', 'marque',
         'date_ajout'
     ]
@@ -69,8 +69,11 @@ class VehiculeAdmin(admin.ModelAdmin):
                 'nombre_portes', 'climatisation', 'kilometrage'
             )
         }),
+        ('Type d\'offre', {
+        'fields': ('est_disponible_vente', 'est_disponible_location')  
+        }),
         ('Tarification', {
-            'fields': ('prix_jour', 'caution')
+            'fields': ('prix_location_jour','prix_vente', 'caution')
         }),
         ('Description et équipements', {
             'fields': ('description', 'equipements')
@@ -133,7 +136,7 @@ class VehiculeAdmin(admin.ModelAdmin):
         return format_html(
             '<strong style="color: #059669;">{:,.0f} FCFA</strong><br/>'
             '<span style="color: gray; font-size: 11px;">par jour</span>',
-            obj.prix_jour
+            obj.prix_location_jour
         )
     get_prix_display.short_description = 'Prix'
     
@@ -194,7 +197,28 @@ class VehiculeAdmin(admin.ModelAdmin):
         )
     mettre_en_maintenance.short_description = "🔧 Mettre en maintenance"
 
+    def disponibilite_vente(self, obj):
+        """Affiche le statut de disponibilité à la vente avec couleur"""
+        if obj.est_disponible_vente:
+            return format_html(
+                '<span style="color: green; font-weight: bold;">✓ Vente</span>'
+            )
+        return format_html(
+            '<span style="color: gray;">✗ Vente</span>'
+        )
+    disponibilite_vente.short_description = 'Disponible vente'
 
+
+    def disponibilite_location(self, obj):
+        """Affiche le statut de disponibilité à la location avec couleur"""
+        if obj.est_disponible_location:
+            return format_html(
+                '<span style="color: blue; font-weight: bold;">✓ Location</span>'
+            )
+        return format_html(
+            '<span style="color: gray;">✗ Location</span>'
+        )
+    disponibilite_location.short_description = 'Disponible location'
 # ========================================
 # ADMIN IMAGES VÉHICULE
 # ========================================

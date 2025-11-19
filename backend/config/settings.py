@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-     'django_extensions',
+    'django_extensions',
 
     # App tierces
     
@@ -213,4 +213,8 @@ AUTH_USER_MODEL = 'users.User'
 
 # Media files (Uploads utilisateurs)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+
+
+#  Configuration STATIC FILES (pour l'admin Django)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
