@@ -4,7 +4,6 @@ import {
   FiUsers, FiMessageSquare, FiSettings,
   FiHelpCircle, FiLogOut
 } from 'react-icons/fi';
-import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -20,7 +19,6 @@ export default function Sidebar({ isOpen, onClose }) {
     if (user?.type_utilisateur === 'CONCESSIONNAIRE') {
       return [
         { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
-        { path: '/my-concessions', icon: FaMapMarkerAlt, label: 'Mes concessions', roles: ['CONCESSIONNAIRE'] },
         { path: '/my-vehicules', icon: FiTruck, label: 'Mes véhicules', roles: ['CONCESSIONNAIRE'] },
         { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
         { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['CONCESSIONNAIRE'] },
@@ -42,7 +40,6 @@ export default function Sidebar({ isOpen, onClose }) {
     if (user?.type_utilisateur === 'ADMINISTRATEUR') {
       return [
         { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
-        { path: '/admin/concessions', icon: FaMapMarkerAlt, label: 'Concessions', roles: ['ADMINISTRATEUR'] },
         { path: '/vehicules', icon: FiTruck, label: 'Véhicules', roles: ['all'] },
         { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
         { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['ADMINISTRATEUR'] },
@@ -86,9 +83,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar - TEAL */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-teal-700 to-teal-900 z-50 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } w-60 shadow-2xl`}
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-teal-700 to-teal-900 z-50 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          }  w-60 shadow-2xl`}
       >
         <div className="flex flex-col h-full">
           {/* Logo - ALIGNÉ AVEC LE HEADER */}
@@ -100,6 +96,8 @@ export default function Sidebar({ isOpen, onClose }) {
               <span className="text-xl font-bold text-white">AutoConnect</span>
             </Link>
           </div>
+
+
 
           {/* Navigation principale */}
           <nav className="flex-1 overflow-y-auto p-4 space-y-1">
@@ -113,28 +111,50 @@ export default function Sidebar({ isOpen, onClose }) {
                   className="block relative"
                 >
                   <div
-                    className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${
-                      active
-                        ? 'bg-white/10 text-white font-medium'
-                        : 'text-teal-100 hover:bg-white/5 hover:text-white'
-                    } rounded-lg`}
+                    className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${active
+                      ? 'text-teal-700 font-semibold'
+                      : 'text-teal-100 hover:text-white'
+                      }`}
+                    style={{ overflow: 'visible' }}
                   >
-                    <item.icon className={`text-lg ${active ? 'text-white' : 'text-teal-200'}`} />
-                    <span>{item.label}</span>
+                    {/* Fond arrondi blanc pour l'item actif - ÉTENDU AU MAXIMUM */}
                     {active && (
-                      <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-r-full"></div>
+                      <div
+                        className="absolute inset-y-0 bg-gray-100 rounded-l-full shadow-lg z-0"
+                        style={{
+                          left: '0px',
+                          right: 'Opx',  // Déborde de 32px vers la droite
+                          width: 'calc(100% + 16px)'
+                        }}
+                      />
                     )}
+
+                    {/* Icône et texte */}
+                    <item.icon className={`w-5 h-5 relative z-10 ${active ? 'text-teal-700' : ''}`} />
+                    <span className="text-sm relative z-10">{item.label}</span>
                   </div>
                 </Link>
               );
             })}
           </nav>
 
-          {/* Divider */}
-          <div className="border-t border-teal-600/30 mx-4"></div>
 
-          {/* Bottom menu */}
-          <div className="p-4 space-y-1">
+          {/* Section Upgrade (pour concessionnaires) */}
+          {isConcessionnaire() && (
+            <div className="p-4 mx-4 mb-4 bg-gradient-to-br from-gray-900 to-gray-800 rounded-xl text-white shadow-xl">
+              <h3 className="font-semibold text-sm mb-2">Upgrade to Pro</h3>
+              <p className="text-xs text-gray-300 mb-3">
+                Accédez à des fonctionnalités premium
+              </p>
+              <button className="w-full py-2 px-4 bg-white text-gray-900 rounded-lg text-sm font-medium hover:bg-gray-100 transition shadow-md">
+                Upgrade
+              </button>
+            </div>
+          )}
+
+          {/* Navigation secondaire */}
+          {/* Navigation secondaire */}
+          <div className="p-4 space-y-1 border-t border-teal-600/30">
             {bottomMenuItems.map((item) => {
               const active = isActive(item.path);
               return (
@@ -142,25 +162,42 @@ export default function Sidebar({ isOpen, onClose }) {
                   key={item.path}
                   to={item.path}
                   onClick={onClose}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
-                    active
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-teal-100 hover:bg-white/5 hover:text-white'
-                  }`}
+                  className="block relative"
                 >
-                  <item.icon className={`text-lg ${active ? 'text-white' : 'text-teal-200'}`} />
-                  <span>{item.label}</span>
+                  <div
+                    className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${active
+                        ? 'text-teal-700 font-semibold'
+                        : 'text-teal-100 hover:text-white'
+                      }`}
+                    style={{ overflow: 'visible' }}
+                  >
+                    {/* Fond arrondi pour l'item actif - MÊME STYLE QUE NAVIGATION PRINCIPALE */}
+                    {active && (
+                      <div
+                        className="absolute inset-y-0 bg-gray-100 rounded-l-full shadow-lg z-0"
+                        style={{
+                          left: '0px',
+                          right: '0px',
+                          width: 'calc(100% + 16px)'
+                        }}
+                      />
+                    )}
+
+                    {/* Icône et texte */}
+                    <item.icon className={`w-5 h-5 relative z-10 ${active ? 'text-teal-700' : ''}`} />
+                    <span className="text-sm relative z-10">{item.label}</span>
+                  </div>
                 </Link>
               );
             })}
 
-            {/* Logout button */}
+            {/* Bouton Déconnexion (sans effet de sélection) */}
             <button
               onClick={handleLogout}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-teal-100 hover:bg-red-500/20 hover:text-white transition-all"
+              className="flex items-center space-x-3 px-4 py-3 text-teal-100 hover:text-white transition-all w-full text-left rounded-lg hover:bg-white/10"
             >
-              <FiLogOut className="text-lg" />
-              <span>Déconnexion</span>
+              <FiLogOut className="w-5 h-5" />
+              <span className="text-sm">Déconnexion</span>
             </button>
           </div>
         </div>

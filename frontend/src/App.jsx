@@ -25,7 +25,10 @@ import EditVehiculesPage from './pages/vehicules/EditVehiculesPage';
 import VehiculesPage from './pages/vehicules/VehiculesPage';
 import VehiculeDetailPage from './pages/vehicules/VehiculeDetailPage';
 
-
+// Pages Concessions
+import MyConcessionsPage from './pages/concessions/MyConcessionsPage';
+import AddConcessionPage from './pages/concessions/AddConcessionPage';
+import EditConcessionPage from './pages/concessions/EditConcessionPage';
 
 function App() {
   return (
@@ -77,10 +80,10 @@ function App() {
             }
           />
           // Dans les routes protégées
-<Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
 
 
-{/* Routes Véhicules - Concessionnaire uniquement */}
+          {/* Routes Véhicules - Concessionnaire uniquement */}
           <Route
             path="/my-vehicules"
             element={
@@ -108,10 +111,39 @@ function App() {
               </ProtectedRoute>
             }
           />
-          
+
           {/* Routes Catalogue - Public et Client */}
           <Route path="/vehicules" element={<VehiculesPage />} />
           <Route path="/vehicules/:id" element={<VehiculeDetailPage />} />
+
+
+          <Route
+            path="/my-concessions"
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <MyConcessionsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-concessions/add"
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <AddConcessionPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/my-concessions/edit/:id"
+            element={
+              <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                <EditConcessionPage />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* ================================ */}
           {/* ROUTES FUTURES (Phases 3-7) */}
