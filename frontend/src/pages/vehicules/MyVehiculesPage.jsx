@@ -4,6 +4,9 @@ import { useAuth } from '../../context/AuthContext';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import vehiculeService from '../../services/vehiculeService';
 import { FiPlus, FiEdit2, FiTrash2, FiEye, FiFilter } from 'react-icons/fi';
+import { useConcessionCheck } from '../../hooks/useConcessionCheck';
+import NoConcessionAlert from '../../components/concessions/NoConcessionAlert';
+
 
 export default function MyVehiculesPage() {
   const { user } = useAuth();
@@ -12,6 +15,7 @@ export default function MyVehiculesPage() {
   const [vehicules, setVehicules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
 
   // Filtres
   const [filters, setFilters] = useState({
@@ -50,6 +54,12 @@ export default function MyVehiculesPage() {
     }
   };
 
+  const {
+    hasValidConcession,
+    concessions,
+    loading: concessionLoading
+  } = useConcessionCheck();
+
   const handleChangeStatut = async (id, nouveauStatut) => {
     try {
       await vehiculeService.changerStatut(id, nouveauStatut);
@@ -82,20 +92,34 @@ export default function MyVehiculesPage() {
   return (
     <DashboardLayout title="Mes véhicules">
       {/* Header avec bouton Ajouter */}
-      <div className="flex items-center justify-between mb-6">
+
+      {!concessionLoading && (
+        <NoConcessionAlert concessions={concessions} />
+      )}
+
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Mes véhicules</h2>
-          <p className="text-gray-600 mt-1">
-            Gérez votre flotte de véhicules ({vehicules.length} véhicule{vehicules.length > 1 ? 's' : ''})
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Mes Véhicules</h1>
+          <p className="text-gray-600">Gérez votre flotte de véhicules</p>
         </div>
-        <Link
-          to="/my-vehicules/add"
-          className="flex items-center space-x-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition shadow-lg"
-        >
-          <FiPlus className="w-5 h-5" />
-          <span>Ajouter un véhicule</span>
-        </Link>
+
+        {/* Bouton désactivé si pas de concession */}
+        {hasValidConcession ? (
+          <Link
+            to="/my-vehicules/add"
+            className="bg-teal-600 hover:bg-teal-700 text-white px-6 py-3 rounded-lg flex items-center gap-2 transition"
+          >
+            <FiPlus /> Ajouter un véhicule
+          </Link>
+        ) : (
+          <button
+            disabled
+            className="bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center gap-2 cursor-not-allowed opacity-60"
+            title="Créez d'abord une concession validée"
+          >
+            <FiPlus /> Ajouter un véhicule
+          </button>
+        )}
       </div>
 
       {/* Filtres */}
