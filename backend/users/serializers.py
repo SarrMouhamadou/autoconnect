@@ -77,6 +77,15 @@ class UserSerializer(serializers.ModelSerializer):
         
         return data
 
+
+
+class UserSimpleSerializer(serializers.ModelSerializer):
+    """Serializer simplifié pour User (dans les relations)."""
+    full_name = serializers.CharField(source='get_full_name', read_only=True)
+    
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'nom', 'prenom', 'full_name', 'type_utilisateur']
 # ========================================
 # SERIALIZER PROGRESSION PROFIL
 # ========================================
