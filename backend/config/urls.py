@@ -11,8 +11,11 @@ urlpatterns = [
     # APIs Authentication
     path('api/auth/', include('users.urls')),
 
-    # ✅ NOUVEAU : APIs Véhicules
+    # APIs Véhicules
     path('api/', include('vehicules.urls')),
+
+    # APIs Concessions
+    path('api/', include('concessions.urls')),
 ]
 
 # Servir les fichiers media en développement
