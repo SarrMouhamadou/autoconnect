@@ -1,6 +1,3 @@
-# backend/vehicules/models.py
-# VERSION COMPLÈTE CONFORME AU DIAGRAMME DE CLASSE À 100%
-
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -144,6 +141,237 @@ class Categorie(models.Model):
 # ========================================
 # MODÈLE VÉHICULE
 # ========================================
+class Photo(models.Model):
+    """
+    Modèle représentant une photo d'un véhicule.
+    Relation Many-to-One avec Vehicule.
+    ⭐ CONFORME AU DIAGRAMME DE CLASSE
+    """
+    
+    vehicule = models.ForeignKey(
+        'Vehicule',
+        on_delete=models.CASCADE,
+        related_name='photos',
+        verbose_name="Véhicule"
+    )
+    
+    image = models.ImageField(
+        upload_to='vehicules/photos/',
+        verbose_name="Photo"
+    )
+    
+    legende = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Légende",
+        help_text="Description de la photo"
+    )
+    
+    ordre = models.IntegerField(
+        default=0,
+        verbose_name="Ordre d'affichage",
+        help_text="Plus le nombre est petit, plus la photo sera affichée en premier"
+    )
+    
+    est_principale = models.BooleanField(
+        default=False,
+        verbose_name="Photo principale",
+        help_text="Une seule photo principale par véhicule"
+    )
+    
+    date_ajout = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date d'ajout"
+    )
+    
+    class Meta:
+        verbose_name = "Photo"
+        verbose_name_plural = "Photos"
+        ordering = ['-est_principale', 'ordre', '-date_ajout']
+        indexes = [
+            models.Index(fields=['vehicule', 'est_principale']),
+            models.Index(fields=['ordre']),
+        ]
+    
+    def __str__(self):
+        principale = " (Principale)" if self.est_principale else ""
+        return f"Photo {self.ordre}{principale} - {self.vehicule}"
+    
+    def save(self, *args, **kwargs):
+        """
+        Si cette photo est marquée comme principale,
+        retirer le statut principal des autres photos du même véhicule.
+        """
+        if self.est_principale:
+            # Retirer le statut principal des autres photos
+            Photo.objects.filter(
+                vehicule=self.vehicule,
+                est_principale=True
+            ).exclude(pk=self.pk).update(est_principale=False)
+        
+        super().save(*args, **kwargs)
+
+ #========================================
+# MODÈLE VIDEO
+# ========================================
+
+class Video(models.Model):
+    """
+    Modèle représentant une vidéo d'un véhicule.
+    Relation Many-to-One avec Vehicule.
+    ⭐ CONFORME AU DIAGRAMME DE CLASSE
+    ⚠️ OPTIONNELLE (contrairement aux photos)
+    """
+    
+    TYPE_VIDEO_CHOICES = [
+        ('UPLOAD', 'Fichier uploadé'),
+        ('YOUTUBE', 'Lien YouTube'),
+        ('VIMEO', 'Lien Vimeo'),
+        ('AUTRE', 'Autre URL'),
+    ]
+    
+    vehicule = models.ForeignKey(
+        'Vehicule',
+        on_delete=models.CASCADE,
+        related_name='videos',
+        verbose_name="Véhicule"
+    )
+    
+    type_video = models.CharField(
+        max_length=20,
+        choices=TYPE_VIDEO_CHOICES,
+        default='UPLOAD',
+        verbose_name="Type de vidéo"
+    )
+    
+    # Fichier vidéo (si uploadé)
+    fichier = models.FileField(
+        upload_to='vehicules/videos/',
+        blank=True,
+        null=True,
+        verbose_name="Fichier vidéo",
+        help_text="Format accepté: MP4, WebM (max 100 MB)"
+    )
+    
+    # URL de la vidéo (si hébergée ailleurs)
+    url = models.URLField(
+        blank=True,
+        verbose_name="URL de la vidéo",
+        help_text="Lien YouTube, Vimeo, etc."
+    )
+    
+    # Thumbnail (miniature)
+    thumbnail = models.ImageField(
+        upload_to='vehicules/videos/thumbnails/',
+        blank=True,
+        null=True,
+        verbose_name="Miniature",
+        help_text="Image d'aperçu de la vidéo"
+    )
+    
+    titre = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name="Titre",
+        help_text="Titre de la vidéo"
+    )
+    
+    description = models.TextField(
+        blank=True,
+        verbose_name="Description"
+    )
+    
+    duree = models.IntegerField(
+        null=True,
+        blank=True,
+        verbose_name="Durée (secondes)",
+        help_text="Durée de la vidéo en secondes"
+    )
+    
+    ordre = models.IntegerField(
+        default=0,
+        verbose_name="Ordre d'affichage"
+    )
+    
+    nombre_vues = models.IntegerField(
+        default=0,
+        verbose_name="Nombre de vues"
+    )
+    
+    date_ajout = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Date d'ajout"
+    )
+    
+    class Meta:
+        verbose_name = "Vidéo"
+        verbose_name_plural = "Vidéos"
+        ordering = ['ordre', '-date_ajout']
+        indexes = [
+            models.Index(fields=['vehicule', 'type_video']),
+            models.Index(fields=['ordre']),
+        ]
+    
+    def __str__(self):
+        return f"Vidéo {self.ordre} - {self.vehicule}"
+    
+    def clean(self):
+        """Validation : soit fichier, soit URL."""
+        from django.core.exceptions import ValidationError
+        
+        if not self.fichier and not self.url:
+            raise ValidationError(
+                "Vous devez fournir soit un fichier vidéo, soit une URL."
+            )
+        
+        if self.fichier and self.url:
+            raise ValidationError(
+                "Vous ne pouvez pas fournir à la fois un fichier et une URL. Choisissez l'un ou l'autre."
+            )
+        
+        # Valider la taille du fichier (max 100 MB)
+        if self.fichier and self.fichier.size > 100 * 1024 * 1024:
+            raise ValidationError(
+                "La taille du fichier vidéo ne doit pas dépasser 100 MB."
+            )
+    
+    def get_video_url(self):
+        """Retourner l'URL de la vidéo (fichier ou externe)."""
+        if self.fichier:
+            return self.fichier.url
+        return self.url
+    
+    def incrementer_vues(self):
+        """Incrémenter le compteur de vues."""
+        self.nombre_vues += 1
+        self.save(update_fields=['nombre_vues'])
+    
+    @staticmethod
+    def extraire_id_youtube(url):
+        """Extraire l'ID d'une vidéo YouTube."""
+        import re
+        
+        patterns = [
+            r'(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\n?#]+)',
+            r'youtube\.com\/embed\/([^&\n?#]+)',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, url)
+            if match:
+                return match.group(1)
+        
+        return None
+    
+    def get_embed_url(self):
+        """Retourner l'URL embed pour intégration."""
+        if self.type_video == 'YOUTUBE' and self.url:
+            video_id = self.extraire_id_youtube(self.url)
+            if video_id:
+                return f"https://www.youtube.com/embed/{video_id}"
+        
+        return self.url
+
 
 class Vehicule(models.Model):
     """
@@ -226,7 +454,7 @@ class Vehicule(models.Model):
     equipements = models.JSONField(default=list, blank=True)
     
     # Images
-    image_principale = models.ImageField(upload_to='vehicules/principales/')
+   
     
     # Statut
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='DISPONIBLE')
@@ -313,28 +541,28 @@ class Vehicule(models.Model):
             categorie.mettre_a_jour_compteur()
 
 
-# ========================================
-# MODÈLE IMAGE VÉHICULE
-# ========================================
+    @property
+    def photo_principale(self):
+        """Retourner la photo principale du véhicule."""
+        return self.photos.filter(est_principale=True).first()
+    
+    @property
+    def autres_photos(self):
+        """Retourner les autres photos (non principales)."""
+        return self.photos.filter(est_principale=False)
+    
+    @property
+    def toutes_photos(self):
+        """Retourner toutes les photos triées."""
+        return self.photos.all()
+    
+    @property
+    def a_video(self):
+        """Vérifier si le véhicule a au moins une vidéo."""
+        return self.videos.exists()
+    
+    @property
+    def premiere_video(self):
+        """Retourner la première vidéo du véhicule."""
+        return self.videos.first()
 
-class ImageVehicule(models.Model):
-    """Images supplémentaires d'un véhicule."""
-    
-    vehicule = models.ForeignKey(
-        Vehicule,
-        on_delete=models.CASCADE,
-        related_name='images'
-    )
-    
-    image = models.ImageField(upload_to='vehicules/galerie/')
-    description = models.CharField(max_length=200, blank=True)
-    ordre = models.IntegerField(default=0)
-    date_ajout = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Image de véhicule"
-        verbose_name_plural = "Images de véhicules"
-        ordering = ['ordre', '-date_ajout']
-    
-    def __str__(self):
-        return f"Image {self.ordre} - {self.vehicule}"

@@ -1,14 +1,19 @@
+# backend/vehicules/views.py
+# VERSION AVEC PHOTO ET VIDEO (conforme au diagramme)
+
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 
-from vehicules.models import Marque, Categorie, Vehicule, ImageVehicule
+from vehicules.models import Marque, Categorie, Vehicule, Photo, Video
 from vehicules.serializers import (
     MarqueSerializer, MarqueCreateSerializer,
     CategorieSerializer, CategorieCreateSerializer,
-    VehiculeSerializer, VehiculeListSerializer, VehiculeCreateSerializer
+    VehiculeSerializer, VehiculeListSerializer, VehiculeCreateSerializer,
+    PhotoSerializer, PhotoCreateSerializer,
+    VideoSerializer, VideoCreateSerializer
 )
 from users.permissions import IsConcessionnaire, IsAdministrateur
 
@@ -18,15 +23,7 @@ from users.permissions import IsConcessionnaire, IsAdministrateur
 # ========================================
 
 class MarqueViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet pour gérer les marques de véhicules.
-    
-    GET /api/marques/ - Liste des marques
-    POST /api/marques/ - Créer une marque (Admin uniquement)
-    GET /api/marques/{id}/ - Détail d'une marque
-    PUT/PATCH /api/marques/{id}/ - Modifier une marque (Admin uniquement)
-    DELETE /api/marques/{id}/ - Supprimer une marque (Admin uniquement)
-    """
+    """ViewSet pour gérer les marques de véhicules."""
     
     queryset = Marque.objects.all()
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -41,13 +38,7 @@ class MarqueViewSet(viewsets.ModelViewSet):
         return MarqueSerializer
     
     def get_permissions(self):
-        
-        """
-        Permissions :
-        - Liste et détail : tout le monde
-        - Création, modification, suppression : Admin uniquement
-        """
-
+        """Permissions : Liste/détail public, CUD admin uniquement."""
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsAdministrateur()]
         return [permissions.AllowAny()]
@@ -64,10 +55,7 @@ class MarqueViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def populaires(self, request):
-        """
-        Retourner les marques les plus populaires (avec le plus de véhicules).
-        GET /api/marques/populaires/
-        """
+        """Retourner les marques les plus populaires."""
         marques = self.get_queryset().filter(
             est_active=True,
             nombre_vehicules__gt=0
@@ -82,15 +70,7 @@ class MarqueViewSet(viewsets.ModelViewSet):
 # ========================================
 
 class CategorieViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet pour gérer les catégories de véhicules.
-    
-    GET /api/categories/ - Liste des catégories
-    POST /api/categories/ - Créer une catégorie (Admin uniquement)
-    GET /api/categories/{id}/ - Détail d'une catégorie
-    PUT/PATCH /api/categories/{id}/ - Modifier une catégorie (Admin uniquement)
-    DELETE /api/categories/{id}/ - Supprimer une catégorie (Admin uniquement)
-    """
+    """ViewSet pour gérer les catégories de véhicules."""
     
     queryset = Categorie.objects.all()
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -105,11 +85,7 @@ class CategorieViewSet(viewsets.ModelViewSet):
         return CategorieSerializer
     
     def get_permissions(self):
-        """
-        Permissions :
-        - Liste et détail : tout le monde
-        - Création, modification, suppression : Admin uniquement
-        """
+        """Permissions : Liste/détail public, CUD admin uniquement."""
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsAdministrateur()]
         return [permissions.AllowAny()]
@@ -126,10 +102,7 @@ class CategorieViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def populaires(self, request):
-        """
-        Retourner les catégories les plus populaires.
-        GET /api/categories/populaires/
-        """
+        """Retourner les catégories les plus populaires."""
         categories = self.get_queryset().filter(
             est_active=True,
             nombre_vehicules__gt=0
@@ -140,13 +113,12 @@ class CategorieViewSet(viewsets.ModelViewSet):
 
 
 # ========================================
-# VIEWSET VÉHICULE (MISE À JOUR)
+# VIEWSET VÉHICULE
 # ========================================
 
 class VehiculeViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les véhicules.
-    
     ⭐ CONFORME AU DIAGRAMME DE CLASSE À 100%
     """
     
@@ -155,7 +127,7 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         'categorie',
         'concession',
         'concessionnaire'
-    ).prefetch_related('images')
+    ).prefetch_related('photos', 'videos')
     
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
@@ -208,12 +180,7 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         return VehiculeSerializer
     
     def get_permissions(self):
-        """
-        Permissions :
-        - Liste et détail : tout le monde
-        - Création : concessionnaire uniquement
-        - Modification/Suppression : propriétaire uniquement
-        """
+        """Permissions."""
         if self.action in ['create']:
             return [permissions.IsAuthenticated(), IsConcessionnaire()]
         elif self.action in ['update', 'partial_update', 'destroy']:
@@ -248,9 +215,7 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         serializer.save(concessionnaire=self.request.user)
     
     def retrieve(self, request, *args, **kwargs):
-        """
-        Récupérer un véhicule et incrémenter le compteur de vues.
-        """
+        """Récupérer un véhicule et incrémenter le compteur de vues."""
         instance = self.get_object()
         
         # Incrémenter les vues (sauf pour le propriétaire)
@@ -279,10 +244,10 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = VehiculeListSerializer(page, many=True)
+            serializer = VehiculeListSerializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
         
-        serializer = VehiculeListSerializer(queryset, many=True)
+        serializer = VehiculeListSerializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
     
     @action(
@@ -290,10 +255,7 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         methods=['get']
     )
     def par_marque(self, request):
-        """
-        Grouper les véhicules par marque.
-        GET /api/vehicules/par-marque/
-        """
+        """Grouper les véhicules par marque."""
         from django.db.models import Count
         
         marques = Marque.objects.filter(
@@ -317,10 +279,7 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         methods=['get']
     )
     def par_categorie(self, request):
-        """
-        Grouper les véhicules par catégorie.
-        GET /api/vehicules/par-categorie/
-        """
+        """Grouper les véhicules par catégorie."""
         from django.db.models import Count
         
         categories = Categorie.objects.filter(
@@ -339,3 +298,194 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         } for c in categories]
         
         return Response(data)
+    
+    # ========================================
+    # GESTION DES PHOTOS (NOUVEAU)
+    # ========================================
+    
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def ajouter_photos(self, request, pk=None):
+        """
+        Ajouter des photos à un véhicule.
+        POST /api/vehicules/{id}/ajouter-photos/
+        
+        Body: multipart/form-data avec 'photos[]'
+        """
+        vehicule = self.get_object()
+        
+        # Vérifier que c'est le propriétaire
+        if vehicule.concessionnaire != request.user:
+            return Response(
+                {"error": "Vous n'êtes pas le propriétaire de ce véhicule"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        photos = request.FILES.getlist('photos')
+        
+        if not photos:
+            return Response(
+                {"error": "Aucune photo fournie"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Créer les photos
+        photos_creees = []
+        dernier_ordre = vehicule.photos.count()
+        
+        for index, photo_file in enumerate(photos):
+            photo = Photo.objects.create(
+                vehicule=vehicule,
+                image=photo_file,
+                ordre=dernier_ordre + index + 1
+            )
+            photos_creees.append(PhotoSerializer(photo, context={'request': request}).data)
+        
+        return Response({
+            "message": f"{len(photos_creees)} photo(s) ajoutée(s)",
+            "photos": photos_creees
+        }, status=status.HTTP_201_CREATED)
+    
+    @action(
+        detail=True,
+        methods=['delete'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='supprimer-photo/(?P<photo_id>[^/.]+)'
+    )
+    def supprimer_photo(self, request, pk=None, photo_id=None):
+        """
+        Supprimer une photo d'un véhicule.
+        DELETE /api/vehicules/{id}/supprimer-photo/{photo_id}/
+        """
+        vehicule = self.get_object()
+        
+        # Vérifier que c'est le propriétaire
+        if vehicule.concessionnaire != request.user:
+            return Response(
+                {"error": "Vous n'êtes pas le propriétaire de ce véhicule"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            photo = vehicule.photos.get(id=photo_id)
+            photo.delete()
+            return Response(
+                {"message": "Photo supprimée avec succès"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except Photo.DoesNotExist:
+            return Response(
+                {"error": "Photo non trouvée"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    @action(
+        detail=True,
+        methods=['patch'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='photo-principale/(?P<photo_id>[^/.]+)'
+    )
+    def definir_photo_principale(self, request, pk=None, photo_id=None):
+        """
+        Définir une photo comme principale.
+        PATCH /api/vehicules/{id}/photo-principale/{photo_id}/
+        """
+        vehicule = self.get_object()
+        
+        # Vérifier que c'est le propriétaire
+        if vehicule.concessionnaire != request.user:
+            return Response(
+                {"error": "Vous n'êtes pas le propriétaire de ce véhicule"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            photo = vehicule.photos.get(id=photo_id)
+            photo.est_principale = True
+            photo.save()  # Le save() retire automatiquement le statut principal des autres
+            
+            return Response(
+                {"message": "Photo principale définie avec succès"},
+                status=status.HTTP_200_OK
+            )
+        except Photo.DoesNotExist:
+            return Response(
+                {"error": "Photo non trouvée"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+    
+    # ========================================
+    # GESTION DES VIDEOS (NOUVEAU)
+    # ========================================
+    
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def ajouter_video(self, request, pk=None):
+        """
+        Ajouter une vidéo à un véhicule.
+        POST /api/vehicules/{id}/ajouter-video/
+        
+        Body (JSON ou multipart):
+        {
+            "type_video": "YOUTUBE" | "UPLOAD" | "VIMEO",
+            "url": "https://youtube.com/..." (si type_video != UPLOAD),
+            "fichier": <file> (si type_video == UPLOAD),
+            "titre": "Titre de la vidéo",
+            "description": "Description...",
+            "thumbnail": <file> (optionnel)
+        }
+        """
+        vehicule = self.get_object()
+        
+        # Vérifier que c'est le propriétaire
+        if vehicule.concessionnaire != request.user:
+            return Response(
+                {"error": "Vous n'êtes pas le propriétaire de ce véhicule"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        serializer = VideoCreateSerializer(data=request.data, context={'request': request})
+        if serializer.is_valid():
+            serializer.save(vehicule=vehicule)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(
+        detail=True,
+        methods=['delete'],
+        permission_classes=[permissions.IsAuthenticated],
+        url_path='supprimer-video/(?P<video_id>[^/.]+)'
+    )
+    def supprimer_video(self, request, pk=None, video_id=None):
+        """
+        Supprimer une vidéo d'un véhicule.
+        DELETE /api/vehicules/{id}/supprimer-video/{video_id}/
+        """
+        vehicule = self.get_object()
+        
+        # Vérifier que c'est le propriétaire
+        if vehicule.concessionnaire != request.user:
+            return Response(
+                {"error": "Vous n'êtes pas le propriétaire de ce véhicule"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            video = vehicule.videos.get(id=video_id)
+            video.delete()
+            return Response(
+                {"message": "Vidéo supprimée avec succès"},
+                status=status.HTTP_204_NO_CONTENT
+            )
+        except Video.DoesNotExist:
+            return Response(
+                {"error": "Vidéo non trouvée"},
+                status=status.HTTP_404_NOT_FOUND
+            )

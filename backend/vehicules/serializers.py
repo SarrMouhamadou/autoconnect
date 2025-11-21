@@ -1,11 +1,14 @@
+# backend/vehicules/serializers.py
+# VERSION AVEC PHOTO ET VIDEO (conforme au diagramme)
+
 from rest_framework import serializers
-from .models import Marque, Categorie, Vehicule, ImageVehicule
+from .models import Marque, Categorie, Vehicule, Photo, Video
 from concessions.models import Concession
 from users.models import User
 
 
 # ========================================
-# SERIALIZERS MINIMAUX (DÉFINIS ICI)
+# SERIALIZERS MINIMAUX
 # ========================================
 
 class ConcessionMinimalSerializer(serializers.ModelSerializer):
@@ -36,10 +39,7 @@ class UserMinimalSerializer(serializers.ModelSerializer):
 # ========================================
 
 class MarqueSerializer(serializers.ModelSerializer):
-    """
-    Serializer pour lire une marque.
-    GET /api/marques/
-    """
+    """Serializer pour lire une marque."""
     
     class Meta:
         model = Marque
@@ -58,9 +58,7 @@ class MarqueSerializer(serializers.ModelSerializer):
 
 
 class MarqueMinimalSerializer(serializers.ModelSerializer):
-    """
-    Serializer minimal pour marque (dans les listes).
-    """
+    """Serializer minimal pour marque."""
     
     class Meta:
         model = Marque
@@ -68,10 +66,7 @@ class MarqueMinimalSerializer(serializers.ModelSerializer):
 
 
 class MarqueCreateSerializer(serializers.ModelSerializer):
-    """
-    Serializer pour créer une marque.
-    POST /api/marques/
-    """
+    """Serializer pour créer une marque."""
     
     class Meta:
         model = Marque
@@ -97,10 +92,7 @@ class MarqueCreateSerializer(serializers.ModelSerializer):
 # ========================================
 
 class CategorieSerializer(serializers.ModelSerializer):
-    """
-    Serializer pour lire une catégorie.
-    GET /api/categories/
-    """
+    """Serializer pour lire une catégorie."""
     
     class Meta:
         model = Categorie
@@ -120,9 +112,7 @@ class CategorieSerializer(serializers.ModelSerializer):
 
 
 class CategorieMinimalSerializer(serializers.ModelSerializer):
-    """
-    Serializer minimal pour catégorie (dans les listes).
-    """
+    """Serializer minimal pour catégorie."""
     
     class Meta:
         model = Categorie
@@ -130,10 +120,7 @@ class CategorieMinimalSerializer(serializers.ModelSerializer):
 
 
 class CategorieCreateSerializer(serializers.ModelSerializer):
-    """
-    Serializer pour créer une catégorie.
-    POST /api/categories/
-    """
+    """Serializer pour créer une catégorie."""
     
     class Meta:
         model = Categorie
@@ -155,15 +142,137 @@ class CategorieCreateSerializer(serializers.ModelSerializer):
 
 
 # ========================================
+# SERIALIZER PHOTO (NOUVEAU)
+# ========================================
+
+class PhotoSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour Photo.
+    ⭐ REMPLACE ImageVehiculeSerializer
+    """
+    
+    image_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Photo
+        fields = [
+            'id',
+            'image',
+            'image_url',
+            'legende',
+            'ordre',
+            'est_principale',
+            'date_ajout'
+        ]
+        read_only_fields = ['date_ajout']
+    
+    def get_image_url(self, obj):
+        """Retourner l'URL complète de l'image."""
+        request = self.context.get('request')
+        if obj.image and request:
+            return request.build_absolute_uri(obj.image.url)
+        elif obj.image:
+            return obj.image.url
+        return None
+
+
+class PhotoCreateSerializer(serializers.ModelSerializer):
+    """Serializer pour créer une photo."""
+    
+    class Meta:
+        model = Photo
+        fields = ['image', 'legende', 'ordre', 'est_principale']
+
+
+# ========================================
+# SERIALIZER VIDEO (NOUVEAU)
+# ========================================
+
+class VideoSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour Video.
+    ⭐ NOUVEAU - Conforme au diagramme
+    """
+    
+    embed_url = serializers.SerializerMethodField()
+    video_url = serializers.SerializerMethodField()
+    thumbnail_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Video
+        fields = [
+            'id',
+            'type_video',
+            'fichier',
+            'url',
+            'video_url',
+            'embed_url',
+            'thumbnail',
+            'thumbnail_url',
+            'titre',
+            'description',
+            'duree',
+            'ordre',
+            'nombre_vues',
+            'date_ajout'
+        ]
+        read_only_fields = ['nombre_vues', 'date_ajout']
+    
+    def get_embed_url(self, obj):
+        """URL pour embed (iframe)."""
+        return obj.get_embed_url()
+    
+    def get_video_url(self, obj):
+        """URL de la vidéo."""
+        return obj.get_video_url()
+    
+    def get_thumbnail_url(self, obj):
+        """URL du thumbnail."""
+        request = self.context.get('request')
+        if obj.thumbnail and request:
+            return request.build_absolute_uri(obj.thumbnail.url)
+        elif obj.thumbnail:
+            return obj.thumbnail.url
+        return None
+
+
+class VideoCreateSerializer(serializers.ModelSerializer):
+    """Serializer pour créer une vidéo."""
+    
+    class Meta:
+        model = Video
+        fields = [
+            'type_video',
+            'fichier',
+            'url',
+            'thumbnail',
+            'titre',
+            'description',
+            'duree',
+            'ordre'
+        ]
+    
+    def validate(self, data):
+        """Validation : soit fichier, soit URL."""
+        if not data.get('fichier') and not data.get('url'):
+            raise serializers.ValidationError(
+                "Vous devez fournir soit un fichier, soit une URL."
+            )
+        if data.get('fichier') and data.get('url'):
+            raise serializers.ValidationError(
+                "Vous ne pouvez pas fournir à la fois un fichier et une URL."
+            )
+        return data
+
+
+# ========================================
 # SERIALIZER VÉHICULE (LECTURE)
 # ========================================
 
 class VehiculeSerializer(serializers.ModelSerializer):
     """
     Serializer complet pour lire un véhicule.
-    GET /api/vehicules/{id}/
-    
-    ⭐ CONFORME AU DIAGRAMME - Inclut Marque, Catégorie, Concession
+    ⭐ CONFORME AU DIAGRAMME - Avec Photo et Video
     """
     
     # Relations en lecture seule
@@ -172,8 +281,10 @@ class VehiculeSerializer(serializers.ModelSerializer):
     concession = ConcessionMinimalSerializer(read_only=True)
     concessionnaire = UserMinimalSerializer(read_only=True)
     
-    # Images supplémentaires
-    images = serializers.SerializerMethodField()
+    # Photos et vidéos (NOUVEAU)
+    photos = PhotoSerializer(many=True, read_only=True)
+    videos = VideoSerializer(many=True, read_only=True)
+    photo_principale = serializers.SerializerMethodField()
     
     # Nom complet calculé
     nom_complet = serializers.ReadOnlyField()
@@ -217,9 +328,10 @@ class VehiculeSerializer(serializers.ModelSerializer):
             'description',
             'equipements',
             
-            # Images
-            'image_principale',
-            'images',
+            # Photos et vidéos (CHANGEMENT ICI)
+            'photo_principale',  # Au lieu de image_principale
+            'photos',            # Au lieu de images
+            'videos',            # NOUVEAU
             
             # Statut
             'statut',
@@ -240,16 +352,12 @@ class VehiculeSerializer(serializers.ModelSerializer):
             'date_modification',
         ]
     
-    def get_images(self, obj):
-        """Retourner toutes les images supplémentaires."""
-        images = obj.images.all()
-        request = self.context.get('request')
-        return [{
-            'id': img.id,
-            'image': request.build_absolute_uri(img.image.url) if request and img.image else None,
-            'description': img.description,
-            'ordre': img.ordre
-        } for img in images]
+    def get_photo_principale(self, obj):
+        """Retourner la photo principale."""
+        photo = obj.photo_principale
+        if photo:
+            return PhotoSerializer(photo, context=self.context).data
+        return None
 
 
 # ========================================
@@ -259,8 +367,6 @@ class VehiculeSerializer(serializers.ModelSerializer):
 class VehiculeListSerializer(serializers.ModelSerializer):
     """
     Serializer pour lister les véhicules.
-    GET /api/vehicules/
-    
     ⭐ CONFORME AU DIAGRAMME
     """
     
@@ -270,6 +376,7 @@ class VehiculeListSerializer(serializers.ModelSerializer):
     concession_ville = serializers.CharField(source='concession.ville', read_only=True)
     
     nom_complet = serializers.ReadOnlyField()
+    photo_principale = serializers.SerializerMethodField()
     
     class Meta:
         model = Vehicule
@@ -289,13 +396,23 @@ class VehiculeListSerializer(serializers.ModelSerializer):
             'est_disponible_location',
             'prix_vente',
             'prix_location_jour',
-            'image_principale',
+            'photo_principale',  # Au lieu de image_principale
             'statut',
             'concession_nom',
             'concession_ville',
             'note_moyenne',
             'nombre_avis',
         ]
+    
+    def get_photo_principale(self, obj):
+        """Retourner l'URL de la photo principale."""
+        photo = obj.photo_principale
+        if photo and photo.image:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(photo.image.url)
+            return photo.image.url
+        return None
 
 
 # ========================================
@@ -305,9 +422,7 @@ class VehiculeListSerializer(serializers.ModelSerializer):
 class VehiculeCreateSerializer(serializers.ModelSerializer):
     """
     Serializer pour créer un véhicule.
-    POST /api/vehicules/
-    
-    ⭐ CONFORME AU DIAGRAMME - Requiert Marque, Catégorie, Concession
+    ⭐ CONFORME AU DIAGRAMME - Avec photos multiples
     """
     
     # Relations en écriture (ID seulement)
@@ -332,13 +447,14 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
         required=True
     )
     
-    # Images supplémentaires
-    images_data = serializers.ListField(
+    # Photos (CHANGEMENT ICI)
+    photos_data = serializers.ListField(
         child=serializers.ImageField(),
         write_only=True,
         required=False,
         allow_empty=True,
-        max_length=10
+        max_length=10,
+        help_text="Liste des photos du véhicule (max 10). La première sera marquée comme principale."
     )
     
     class Meta:
@@ -376,11 +492,8 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
             'description',
             'equipements',
             
-            # Image principale
-            'image_principale',
-            
-            # Images supplémentaires
-            'images_data',
+            # Photos (CHANGEMENT ICI)
+            'photos_data',  # Au lieu de image_principale et images_data
         ]
     
     def validate_concession_id(self, value):
@@ -413,6 +526,14 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
         
         return value.upper()
     
+    def validate_photos_data(self, value):
+        """Valider qu'au moins une photo est fournie."""
+        if not value or len(value) == 0:
+            raise serializers.ValidationError(
+                "Vous devez fournir au moins une photo du véhicule."
+            )
+        return value
+    
     def validate(self, data):
         """Validation globale."""
         
@@ -443,10 +564,10 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
         return data
     
     def create(self, validated_data):
-        """Créer un véhicule avec images supplémentaires."""
+        """Créer un véhicule avec photos."""
         
-        # Extraire les images supplémentaires
-        images_data = validated_data.pop('images_data', [])
+        # Extraire les photos
+        photos_data = validated_data.pop('photos_data', [])
         
         # L'utilisateur (concessionnaire) est ajouté par la vue
         validated_data['concessionnaire'] = self.context['request'].user
@@ -454,12 +575,13 @@ class VehiculeCreateSerializer(serializers.ModelSerializer):
         # Créer le véhicule
         vehicule = Vehicule.objects.create(**validated_data)
         
-        # Créer les images supplémentaires
-        for index, image_file in enumerate(images_data):
-            ImageVehicule.objects.create(
+        # Créer les photos
+        for index, image_file in enumerate(photos_data):
+            Photo.objects.create(
                 vehicule=vehicule,
                 image=image_file,
-                ordre=index + 1
+                ordre=index + 1,
+                est_principale=(index == 0)  # La première photo est principale
             )
         
         return vehicule

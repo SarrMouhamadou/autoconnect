@@ -1,8 +1,8 @@
-# backend/vehicules/admin.py - ADMIN COMPLET
+# backend/vehicules/admin.py - ADMIN COMPLET AVEC PHOTO ET VIDEO
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Marque, Categorie, Vehicule, ImageVehicule
+from .models import Marque, Categorie, Vehicule, Photo, Video
 
 
 # ========================================
@@ -207,18 +207,21 @@ class CategorieAdmin(admin.ModelAdmin):
 
 
 # ========================================
-# INLINE IMAGES VÉHICULE
+# INLINE PHOTOS VÉHICULE (NOUVEAU)
 # ========================================
 
-class ImageVehiculeInline(admin.TabularInline):
-    """Inline pour gérer les images supplémentaires d'un véhicule."""
-    model = ImageVehicule
+class PhotoInline(admin.TabularInline):
+    """
+    Inline pour gérer les photos d'un véhicule.
+    ⭐ REMPLACE ImageVehiculeInline
+    """
+    model = Photo
     extra = 1
-    fields = ['image', 'image_preview', 'description', 'ordre']
+    fields = ['image', 'image_preview', 'legende', 'ordre', 'est_principale']
     readonly_fields = ['image_preview']
     
     def image_preview(self, obj):
-        """Prévisualisation de l'image."""
+        """Prévisualisation de la photo."""
         if obj.image:
             return format_html(
                 '<img src="{}" style="width: 100px; height: 75px; object-fit: cover;" />',
@@ -226,6 +229,30 @@ class ImageVehiculeInline(admin.TabularInline):
             )
         return '-'
     image_preview.short_description = 'Aperçu'
+
+
+# ========================================
+# INLINE VIDEOS VÉHICULE (NOUVEAU)
+# ========================================
+
+class VideoInline(admin.TabularInline):
+    """
+    Inline pour gérer les vidéos d'un véhicule.
+    ⭐ NOUVEAU - Conforme au diagramme
+    """
+    model = Video
+    extra = 0
+    fields = ['type_video', 'fichier', 'url', 'thumbnail', 'titre', 'ordre']
+    
+    def thumbnail_preview(self, obj):
+        """Prévisualisation du thumbnail."""
+        if obj.thumbnail:
+            return format_html(
+                '<img src="{}" style="width: 100px; height: 75px; object-fit: cover;" />',
+                obj.thumbnail.url
+            )
+        return '-'
+    thumbnail_preview.short_description = 'Miniature'
 
 
 # ========================================
@@ -237,6 +264,7 @@ class VehiculeAdmin(admin.ModelAdmin):
     """
     Interface d'administration pour les véhicules.
     ⭐ CONFORME AU DIAGRAMME - Inclut Marque, Catégorie, Concession
+    ⭐ UTILISE Photo et Video au lieu de ImageVehicule
     """
     
     list_display = [
@@ -281,7 +309,7 @@ class VehiculeAdmin(admin.ModelAdmin):
         'nombre_avis',
         'date_ajout',
         'date_modification',
-        'image_preview'
+        'photo_principale_preview'
     ]
     
     autocomplete_fields = ['marque', 'categorie', 'concession']
@@ -323,8 +351,9 @@ class VehiculeAdmin(admin.ModelAdmin):
         ('Description et équipements', {
             'fields': ('description', 'equipements')
         }),
-        ('Images', {
-            'fields': ('image_principale', 'image_preview')
+        ('Photo principale', {
+            'fields': ('photo_principale_preview',),
+            'description': 'La photo principale est définie dans l\'onglet "Photos" ci-dessous en cochant "Photo principale"'
         }),
         ('Statut', {
             'fields': ('statut', 'est_visible')
@@ -348,19 +377,21 @@ class VehiculeAdmin(admin.ModelAdmin):
         }),
     )
     
-    inlines = [ImageVehiculeInline]
+    # ⭐ CHANGEMENT : PhotoInline et VideoInline au lieu de ImageVehiculeInline
+    inlines = [PhotoInline, VideoInline]
     
     actions = ['rendre_disponible', 'rendre_indisponible', 'masquer', 'afficher']
     
-    def image_preview(self, obj):
-        """Prévisualisation de l'image principale."""
-        if obj.image_principale:
+    def photo_principale_preview(self, obj):
+        """Prévisualisation de la photo principale."""
+        photo = obj.photo_principale
+        if photo and photo.image:
             return format_html(
                 '<img src="{}" style="max-width: 300px; max-height: 200px; object-fit: contain;" />',
-                obj.image_principale.url
+                photo.image.url
             )
-        return 'Aucune image'
-    image_preview.short_description = 'Prévisualisation'
+        return 'Aucune photo principale définie'
+    photo_principale_preview.short_description = 'Photo principale'
     
     def rendre_disponible(self, request, queryset):
         """Rendre les véhicules disponibles."""
@@ -388,24 +419,53 @@ class VehiculeAdmin(admin.ModelAdmin):
 
 
 # ========================================
-# ADMIN IMAGE VÉHICULE
+# ADMIN PHOTO (NOUVEAU)
 # ========================================
 
-@admin.register(ImageVehicule)
-class ImageVehiculeAdmin(admin.ModelAdmin):
-    """Interface d'administration pour les images de véhicules."""
+@admin.register(Photo)
+class PhotoAdmin(admin.ModelAdmin):
+    """
+    Interface d'administration pour les photos de véhicules.
+    ⭐ REMPLACE ImageVehiculeAdmin
+    """
     
-    list_display = ['vehicule', 'image_preview', 'description', 'ordre', 'date_ajout']
-    list_filter = ['date_ajout']
-    search_fields = ['vehicule__nom_modele', 'description']
-    readonly_fields = ['date_ajout', 'image_preview_large']
+    list_display = [
+        'vehicule',
+        'image_preview',
+        'legende',
+        'ordre',
+        'est_principale',
+        'date_ajout'
+    ]
+    
+    list_filter = [
+        'est_principale',
+        'date_ajout'
+    ]
+    
+    search_fields = [
+        'vehicule__nom_modele',
+        'vehicule__marque__nom',
+        'legende'
+    ]
+    
+    readonly_fields = [
+        'date_ajout',
+        'image_preview_large'
+    ]
     
     fieldsets = (
         ('Véhicule', {
             'fields': ('vehicule',)
         }),
-        ('Image', {
-            'fields': ('image', 'image_preview_large', 'description', 'ordre')
+        ('Photo', {
+            'fields': (
+                'image',
+                'image_preview_large',
+                'legende',
+                'ordre',
+                'est_principale'
+            )
         }),
         ('Date', {
             'fields': ('date_ajout',)
@@ -420,7 +480,7 @@ class ImageVehiculeAdmin(admin.ModelAdmin):
                 obj.image.url
             )
         return '-'
-    image_preview.short_description = 'Image'
+    image_preview.short_description = 'Photo'
     
     def image_preview_large(self, obj):
         """Grande prévisualisation."""
@@ -429,5 +489,116 @@ class ImageVehiculeAdmin(admin.ModelAdmin):
                 '<img src="{}" style="max-width: 400px; max-height: 300px; object-fit: contain;" />',
                 obj.image.url
             )
-        return 'Aucune image'
+        return 'Aucune photo'
     image_preview_large.short_description = 'Prévisualisation'
+
+
+# ========================================
+# ADMIN VIDEO (NOUVEAU)
+# ========================================
+
+@admin.register(Video)
+class VideoAdmin(admin.ModelAdmin):
+    """
+    Interface d'administration pour les vidéos de véhicules.
+    ⭐ NOUVEAU - Conforme au diagramme
+    """
+    
+    list_display = [
+        'vehicule',
+        'type_video',
+        'titre',
+        'thumbnail_preview',
+        'ordre',
+        'nombre_vues',
+        'date_ajout'
+    ]
+    
+    list_filter = [
+        'type_video',
+        'date_ajout'
+    ]
+    
+    search_fields = [
+        'vehicule__nom_modele',
+        'vehicule__marque__nom',
+        'titre',
+        'description'
+    ]
+    
+    readonly_fields = [
+        'nombre_vues',
+        'date_ajout',
+        'thumbnail_preview_large',
+        'video_embed'
+    ]
+    
+    fieldsets = (
+        ('Véhicule', {
+            'fields': ('vehicule',)
+        }),
+        ('Type de vidéo', {
+            'fields': ('type_video',)
+        }),
+        ('Fichier uploadé', {
+            'fields': ('fichier',),
+            'description': 'Si vous uploadez un fichier vidéo'
+        }),
+        ('URL externe', {
+            'fields': ('url', 'video_embed'),
+            'description': 'Si vous utilisez YouTube, Vimeo, etc.'
+        }),
+        ('Informations', {
+            'fields': (
+                'titre',
+                'description',
+                'duree',
+                'thumbnail',
+                'thumbnail_preview_large',
+                'ordre'
+            )
+        }),
+        ('Statistiques', {
+            'fields': ('nombre_vues',)
+        }),
+        ('Date', {
+            'fields': ('date_ajout',)
+        }),
+    )
+    
+    def thumbnail_preview(self, obj):
+        """Miniature."""
+        if obj.thumbnail:
+            return format_html(
+                '<img src="{}" style="width: 100px; height: 75px; object-fit: cover;" />',
+                obj.thumbnail.url
+            )
+        return '-'
+    thumbnail_preview.short_description = 'Miniature'
+    
+    def thumbnail_preview_large(self, obj):
+        """Grande prévisualisation du thumbnail."""
+        if obj.thumbnail:
+            return format_html(
+                '<img src="{}" style="max-width: 400px; max-height: 300px; object-fit: contain;" />',
+                obj.thumbnail.url
+            )
+        return 'Aucune miniature'
+    thumbnail_preview_large.short_description = 'Prévisualisation miniature'
+    
+    def video_embed(self, obj):
+        """Afficher la vidéo embarquée si c'est une URL."""
+        if obj.type_video in ['YOUTUBE', 'VIMEO'] and obj.url:
+            embed_url = obj.get_embed_url()
+            if embed_url:
+                return format_html(
+                    '<iframe width="560" height="315" src="{}" frameborder="0" allowfullscreen></iframe>',
+                    embed_url
+                )
+        elif obj.fichier:
+            return format_html(
+                '<video width="560" height="315" controls><source src="{}" type="video/mp4"></video>',
+                obj.fichier.url
+            )
+        return 'Aucun aperçu disponible'
+    video_embed.short_description = 'Aperçu vidéo'
