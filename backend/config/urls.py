@@ -16,6 +16,12 @@ urlpatterns = [
 
     # APIs Concessions
     path('api/', include('concessions.urls')),
+
+    # APIs Demands
+    path('api/', include('demands.urls')),
+
+    # APIs Locations
+    path('api/', include('locations.urls')),
 ]
 
 # Servir les fichiers media en développement
