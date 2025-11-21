@@ -1,146 +1,242 @@
-from rest_framework import viewsets, status, permissions, filters
+from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
-from .models import Vehicule, ImageVehicule, Equipement
-from .serializers import (
-    VehiculeSerializer,
-    VehiculeListSerializer,
-    VehiculeCreateSerializer,
-    VehiculeUpdateSerializer,
-    ImageVehiculeSerializer,
-    EquipementSerializer,
-    AjouterImagesSerializer
+
+from vehicules.models import Marque, Categorie, Vehicule, ImageVehicule
+from vehicules.serializers import (
+    MarqueSerializer, MarqueCreateSerializer,
+    CategorieSerializer, CategorieCreateSerializer,
+    VehiculeSerializer, VehiculeListSerializer, VehiculeCreateSerializer
 )
+from users.permissions import IsConcessionnaire, IsAdministrateur
 
 
 # ========================================
-# PERMISSION PERSONNALISÉE
+# VIEWSET MARQUE
 # ========================================
 
-class IsConcessionnaire(permissions.BasePermission):
+class MarqueViewSet(viewsets.ModelViewSet):
     """
-    Permission : Seulement les concessionnaires peuvent créer/modifier/supprimer.
+    ViewSet pour gérer les marques de véhicules.
+    
+    GET /api/marques/ - Liste des marques
+    POST /api/marques/ - Créer une marque (Admin uniquement)
+    GET /api/marques/{id}/ - Détail d'une marque
+    PUT/PATCH /api/marques/{id}/ - Modifier une marque (Admin uniquement)
+    DELETE /api/marques/{id}/ - Supprimer une marque (Admin uniquement)
     """
     
-    def has_permission(self, request, view):
-        # Lecture : tout le monde (même non authentifié)
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        
-        # Écriture : seulement les concessionnaires authentifiés
-        return (
-            request.user and
-            request.user.is_authenticated and
-            request.user.type_utilisateur == 'CONCESSIONNAIRE'
-        )
-
-
-class IsOwnerOrReadOnly(permissions.BasePermission):
-    """
-    Permission : Seulement le propriétaire peut modifier/supprimer son véhicule.
-    """
+    queryset = Marque.objects.all()
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['nom', 'pays_origine']
+    ordering_fields = ['nom', 'nombre_vehicules', 'date_creation']
+    ordering = ['nom']
     
-    def has_object_permission(self, request, view, obj):
-        # Lecture : tout le monde
-        if request.method in permissions.SAFE_METHODS:
-            return True
+    def get_serializer_class(self):
+        """Retourner le serializer approprié selon l'action."""
+        if self.action in ['create', 'update', 'partial_update']:
+            return MarqueCreateSerializer
+        return MarqueSerializer
+    
+    def get_permissions(self):
         
-        # Écriture : seulement le propriétaire ou admin
-        return (
-            obj.concessionnaire == request.user or
-            request.user.is_staff
-        )
+        """
+        Permissions :
+        - Liste et détail : tout le monde
+        - Création, modification, suppression : Admin uniquement
+        """
+
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsAdministrateur()]
+        return [permissions.AllowAny()]
+    
+    def get_queryset(self):
+        """Personnaliser le queryset."""
+        queryset = super().get_queryset()
+        
+        # Filtrer par statut actif (pour les non-admins)
+        if not self.request.user.is_authenticated or not self.request.user.is_administrateur():
+            queryset = queryset.filter(est_active=True)
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def populaires(self, request):
+        """
+        Retourner les marques les plus populaires (avec le plus de véhicules).
+        GET /api/marques/populaires/
+        """
+        marques = self.get_queryset().filter(
+            est_active=True,
+            nombre_vehicules__gt=0
+        ).order_by('-nombre_vehicules')[:10]
+        
+        serializer = self.get_serializer(marques, many=True)
+        return Response(serializer.data)
 
 
 # ========================================
-# VIEWSET VÉHICULES
+# VIEWSET CATÉGORIE
+# ========================================
+
+class CategorieViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour gérer les catégories de véhicules.
+    
+    GET /api/categories/ - Liste des catégories
+    POST /api/categories/ - Créer une catégorie (Admin uniquement)
+    GET /api/categories/{id}/ - Détail d'une catégorie
+    PUT/PATCH /api/categories/{id}/ - Modifier une catégorie (Admin uniquement)
+    DELETE /api/categories/{id}/ - Supprimer une catégorie (Admin uniquement)
+    """
+    
+    queryset = Categorie.objects.all()
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['nom', 'description']
+    ordering_fields = ['nom', 'ordre', 'nombre_vehicules']
+    ordering = ['ordre', 'nom']
+    
+    def get_serializer_class(self):
+        """Retourner le serializer approprié selon l'action."""
+        if self.action in ['create', 'update', 'partial_update']:
+            return CategorieCreateSerializer
+        return CategorieSerializer
+    
+    def get_permissions(self):
+        """
+        Permissions :
+        - Liste et détail : tout le monde
+        - Création, modification, suppression : Admin uniquement
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated(), IsAdministrateur()]
+        return [permissions.AllowAny()]
+    
+    def get_queryset(self):
+        """Personnaliser le queryset."""
+        queryset = super().get_queryset()
+        
+        # Filtrer par statut actif (pour les non-admins)
+        if not self.request.user.is_authenticated or not self.request.user.is_administrateur():
+            queryset = queryset.filter(est_active=True)
+        
+        return queryset
+    
+    @action(detail=False, methods=['get'])
+    def populaires(self, request):
+        """
+        Retourner les catégories les plus populaires.
+        GET /api/categories/populaires/
+        """
+        categories = self.get_queryset().filter(
+            est_active=True,
+            nombre_vehicules__gt=0
+        ).order_by('-nombre_vehicules')[:10]
+        
+        serializer = self.get_serializer(categories, many=True)
+        return Response(serializer.data)
+
+
+# ========================================
+# VIEWSET VÉHICULE (MISE À JOUR)
 # ========================================
 
 class VehiculeViewSet(viewsets.ModelViewSet):
     """
     ViewSet pour gérer les véhicules.
     
-    Endpoints:
-    - GET    /api/vehicules/              -> Liste des véhicules (avec filtres)
-    - POST   /api/vehicules/              -> Créer un véhicule (concessionnaire)
-    - GET    /api/vehicules/{id}/         -> Détails d'un véhicule
-    - PUT    /api/vehicules/{id}/         -> Modifier un véhicule (propriétaire)
-    - PATCH  /api/vehicules/{id}/         -> Modifier partiellement
-    - DELETE /api/vehicules/{id}/         -> Supprimer un véhicule (propriétaire)
-    
-    Actions supplémentaires:
-    - GET    /api/vehicules/mes-vehicules/        -> Mes véhicules (concessionnaire)
-    - POST   /api/vehicules/{id}/ajouter-images/  -> Ajouter des images
-    - DELETE /api/vehicules/{id}/supprimer-image/{image_id}/ -> Supprimer une image
-    - POST   /api/vehicules/{id}/changer-statut/  -> Changer le statut
+    ⭐ CONFORME AU DIAGRAMME DE CLASSE À 100%
     """
     
-    queryset = Vehicule.objects.select_related('concessionnaire').prefetch_related('images').all()
-    permission_classes = [IsConcessionnaire, IsOwnerOrReadOnly]
+    queryset = Vehicule.objects.select_related(
+        'marque',
+        'categorie',
+        'concession',
+        'concessionnaire'
+    ).prefetch_related('images')
     
-    # Filtres et recherche
-    filter_backends = [
-        DjangoFilterBackend,
-        filters.SearchFilter,
-        filters.OrderingFilter
-    ]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     
-    # Champs filtrables
+    # Filtres Django Filter
     filterset_fields = {
-        'marque': ['exact', 'icontains'],
-        'modele': ['exact', 'icontains'],
-        'annee': ['exact', 'gte', 'lte'],
-        'type_vehicule': ['exact'],
+        'marque': ['exact'],
+        'categorie': ['exact'],
+        'concession': ['exact'],
         'type_carburant': ['exact'],
         'transmission': ['exact'],
-        'nombre_places': ['exact', 'gte', 'lte'],
-        'prix_location_jour': ['exact', 'gte', 'lte'],
         'statut': ['exact'],
         'est_disponible_vente': ['exact'],
         'est_disponible_location': ['exact'],
+        'prix_location_jour': ['gte', 'lte'],
+        'prix_vente': ['gte', 'lte'],
+        'annee': ['gte', 'lte'],
+        'nombre_places': ['exact', 'gte'],
+        'climatisation': ['exact'],
     }
     
-    # Champs de recherche
-    search_fields = ['marque', 'modele', 'description']
+    # Recherche textuelle
+    search_fields = [
+        'nom_modele',
+        'marque__nom',
+        'categorie__nom',
+        'description',
+        'immatriculation',
+        'concession__nom',
+        'concession__ville'
+    ]
     
     # Tri
     ordering_fields = [
-        'prix_location_jour', 'annee', 'kilometrage',
-        'note_moyenne', 'nombre_locations', 'date_ajout'
+        'prix_location_jour',
+        'prix_vente',
+        'annee',
+        'kilometrage',
+        'date_ajout',
+        'note_moyenne',
+        'nombre_vues'
     ]
-    ordering = ['-date_ajout']  # Par défaut : plus récents d'abord
+    ordering = ['-date_ajout']
     
     def get_serializer_class(self):
-        """Choisir le serializer selon l'action."""
-        
+        """Retourner le serializer approprié."""
         if self.action == 'list':
             return VehiculeListSerializer
         elif self.action == 'create':
             return VehiculeCreateSerializer
-        elif self.action in ['update', 'partial_update']:
-            return VehiculeUpdateSerializer
-        elif self.action == 'ajouter_images':
-            return AjouterImagesSerializer
-        
         return VehiculeSerializer
     
+    def get_permissions(self):
+        """
+        Permissions :
+        - Liste et détail : tout le monde
+        - Création : concessionnaire uniquement
+        - Modification/Suppression : propriétaire uniquement
+        """
+        if self.action in ['create']:
+            return [permissions.IsAuthenticated(), IsConcessionnaire()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            return [permissions.IsAuthenticated()]
+        return [permissions.AllowAny()]
+    
     def get_queryset(self):
-        """Personnaliser le queryset selon le contexte."""
+        """Personnaliser le queryset selon l'utilisateur."""
         queryset = super().get_queryset()
         
-        # Si l'utilisateur est authentifié et concessionnaire,
-        # on peut inclure ses propres véhicules non disponibles
-        if self.request.user.is_authenticated:
-            if self.request.user.type_utilisateur == 'CONCESSIONNAIRE':
-                # Le concessionnaire voit tous ses véhicules
-                return queryset
+        # Si l'utilisateur est concessionnaire, voir tous ses véhicules
+        if self.request.user.is_authenticated and self.request.user.is_concessionnaire():
+            if self.action in ['update', 'partial_update', 'destroy', 'retrieve']:
+                # Pour les actions d'édition, voir uniquement ses propres véhicules
+                return queryset.filter(concessionnaire=self.request.user)
         
-        # Pour les autres (clients, visiteurs), seulement les véhicules disponibles
+        # Pour les autres (clients, visiteurs), seulement les véhicules disponibles et visibles
         if self.action == 'list':
             queryset = queryset.filter(
-                statut='DISPONIBLE'
+                statut='DISPONIBLE',
+                est_visible=True,
+                concession__statut='VALIDE',
+                concession__est_visible=True
             ).filter(
                 Q(est_disponible_vente=True) | Q(est_disponible_location=True)
             )
@@ -151,8 +247,21 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         """Créer un véhicule et l'attribuer au concessionnaire connecté."""
         serializer.save(concessionnaire=self.request.user)
     
+    def retrieve(self, request, *args, **kwargs):
+        """
+        Récupérer un véhicule et incrémenter le compteur de vues.
+        """
+        instance = self.get_object()
+        
+        # Incrémenter les vues (sauf pour le propriétaire)
+        if not request.user.is_authenticated or request.user != instance.concessionnaire:
+            instance.incrementer_vues()
+        
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+    
     # ========================================
-    # ACTION : MES VÉHICULES
+    # ACTIONS PERSONNALISÉES
     # ========================================
     
     @action(
@@ -165,15 +274,9 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         Récupérer tous les véhicules du concessionnaire connecté.
         GET /api/vehicules/mes-vehicules/
         """
-        
-        queryset = self.get_queryset().filter(
-            concessionnaire=request.user
-        )
-        
-        # Appliquer les filtres
+        queryset = self.get_queryset().filter(concessionnaire=request.user)
         queryset = self.filter_queryset(queryset)
         
-        # Pagination
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = VehiculeListSerializer(page, many=True)
@@ -182,187 +285,57 @@ class VehiculeViewSet(viewsets.ModelViewSet):
         serializer = VehiculeListSerializer(queryset, many=True)
         return Response(serializer.data)
     
-    # ========================================
-    # ACTION : AJOUTER DES IMAGES
-    # ========================================
-    
     @action(
-        detail=True,
-        methods=['post'],
-        permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
+        detail=False,
+        methods=['get']
     )
-    def ajouter_images(self, request, pk=None):
+    def par_marque(self, request):
         """
-        Ajouter des images supplémentaires à un véhicule.
-        POST /api/vehicules/{id}/ajouter-images/
-        
-        Body (multipart/form-data):
-        - images: Liste de fichiers images
+        Grouper les véhicules par marque.
+        GET /api/vehicules/par-marque/
         """
+        from django.db.models import Count
         
-        vehicule = self.get_object()
+        marques = Marque.objects.filter(
+            est_active=True,
+            vehicules__statut='DISPONIBLE',
+            vehicules__est_visible=True
+        ).annotate(
+            nombre=Count('vehicules')
+        ).order_by('-nombre')
         
-        serializer = AjouterImagesSerializer(
-            data=request.data,
-            context={'vehicule': vehicule}
-        )
+        data = [{
+            'marque_id': m.id,
+            'marque_nom': m.nom,
+            'nombre_vehicules': m.nombre
+        } for m in marques]
         
-        if serializer.is_valid():
-            images_created = serializer.save()
-            
-            return Response({
-                'message': f'{len(images_created)} image(s) ajoutée(s) avec succès',
-                'images': ImageVehiculeSerializer(images_created, many=True).data
-            }, status=status.HTTP_201_CREATED)
-        
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    # ========================================
-    # ACTION : SUPPRIMER UNE IMAGE
-    # ========================================
+        return Response(data)
     
     @action(
-        detail=True,
-        methods=['delete'],
-        url_path='supprimer-image/(?P<image_id>[^/.]+)',
-        permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
+        detail=False,
+        methods=['get']
     )
-    def supprimer_image(self, request, pk=None, image_id=None):
+    def par_categorie(self, request):
         """
-        Supprimer une image d'un véhicule.
-        DELETE /api/vehicules/{id}/supprimer-image/{image_id}/
+        Grouper les véhicules par catégorie.
+        GET /api/vehicules/par-categorie/
         """
+        from django.db.models import Count
         
-        vehicule = self.get_object()
+        categories = Categorie.objects.filter(
+            est_active=True,
+            vehicules__statut='DISPONIBLE',
+            vehicules__est_visible=True
+        ).annotate(
+            nombre=Count('vehicules')
+        ).order_by('-nombre')
         
-        try:
-            image = ImageVehicule.objects.get(
-                id=image_id,
-                vehicule=vehicule
-            )
-            image.delete()
-            
-            return Response({
-                'message': 'Image supprimée avec succès'
-            }, status=status.HTTP_200_OK)
+        data = [{
+            'categorie_id': c.id,
+            'categorie_nom': c.nom,
+            'categorie_slug': c.slug,
+            'nombre_vehicules': c.nombre
+        } for c in categories]
         
-        except ImageVehicule.DoesNotExist:
-            return Response({
-                'error': 'Image non trouvée'
-            }, status=status.HTTP_404_NOT_FOUND)
-    
-    # ========================================
-    # ACTION : CHANGER LE STATUT
-    # ========================================
-    
-    @action(
-        detail=True,
-        methods=['post'],
-        permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
-    )
-    @action(
-    detail=True,
-    methods=['post'],
-    permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
-)
-    def changer_statut(self, request, pk=None):
-        """
-        Changer le statut d'un véhicule.
-        POST /api/vehicules/{id}/changer-statut/
-        
-        Body:
-        {
-            "statut": "DISPONIBLE" | "LOUE" | "MAINTENANCE" | "INDISPONIBLE"
-        }
-        """
-        
-        vehicule = self.get_object()
-        
-        nouveau_statut = request.data.get('statut')
-        
-        # Validation du statut
-        statuts_valides = [choice[0] for choice in Vehicule.STATUT_CHOICES]
-        
-        if not nouveau_statut or nouveau_statut not in statuts_valides:
-            return Response({
-                'error': f'Statut invalide. Valeurs possibles: {", ".join(statuts_valides)}'
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        # Mise à jour
-        vehicule.statut = nouveau_statut
-        vehicule.save()
-        
-        serializer = VehiculeSerializer(vehicule)
-        return Response({
-            'message': 'Statut mis à jour avec succès',
-            'vehicule': serializer.data
-        })
-        
-        # ========================================
-        # ACTION : STATISTIQUES DU VÉHICULE
-        # ========================================
-        
-        @action(
-            detail=True,
-            methods=['get'],
-            permission_classes=[permissions.IsAuthenticated, IsOwnerOrReadOnly]
-        )
-        def statistiques(self, request, pk=None):
-            """
-            Récupérer les statistiques d'un véhicule.
-            GET /api/vehicules/{id}/statistiques/
-            """
-            
-            vehicule = self.get_object()
-            
-            # TODO: Calculer les vraies statistiques depuis les locations
-            stats = {
-                'nombre_locations': vehicule.nombre_locations,
-                'note_moyenne': float(vehicule.note_moyenne),
-                'nombre_avis': vehicule.nombre_avis,
-                'revenu_total': 0,  # À calculer depuis les locations
-                'revenu_ce_mois': 0,
-                'taux_occupation': 0,  # À calculer
-                'jours_loues': 0,
-            }
-            
-            return Response(stats)
-
-
-# ========================================
-# VIEWSET ÉQUIPEMENTS
-# ========================================
-
-class EquipementViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet pour lister les équipements disponibles.
-    Lecture seule (gestion via l'admin Django).
-    
-    Endpoints:
-    - GET /api/equipements/           -> Liste des équipements
-    - GET /api/equipements/{id}/      -> Détails d'un équipement
-    """
-    
-    queryset = Equipement.objects.all()
-    serializer_class = EquipementSerializer
-    permission_classes = [permissions.AllowAny]
-    
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['nom', 'description']
-    ordering_fields = ['nom', 'est_populaire']
-    ordering = ['-est_populaire', 'nom']
-    
-    @action(detail=False, methods=['get'])
-    def populaires(self, request):
-        """
-        Liste des équipements populaires.
-        GET /api/equipements/populaires/
-        """
-        
-        equipements = self.queryset.filter(est_populaire=True)
-        serializer = self.get_serializer(equipements, many=True)
-        
-        return Response(serializer.data)
+        return Response(data)
