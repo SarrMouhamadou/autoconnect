@@ -468,6 +468,53 @@ class LocationViewSet(viewsets.ModelViewSet):
         return Response(stats)
 
 
+# À AJOUTER dans backend/locations/views.py
+# Ajouter cette action dans LocationViewSet
+
+@action(
+    detail=True,
+    methods=['post'],
+    permission_classes=[permissions.IsAuthenticated, IsConcessionnaire]
+)
+def generer_contrat(self, request, pk=None):
+    """
+    Générer le contrat PDF pour une location confirmée.
+    POST /api/locations/{id}/generer-contrat/
+    """
+    location = self.get_object()
+    
+    # Vérifier que c'est bien le concessionnaire concerné
+    if location.concessionnaire != request.user:
+        return Response(
+            {"error": "Vous ne pouvez générer que les contrats de vos locations"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Vérifier que la location est confirmée
+    if location.statut not in ['CONFIRMEE', 'EN_COURS', 'TERMINEE']:
+        return Response(
+            {"error": "Le contrat ne peut être généré que pour une location confirmée"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Générer le contrat
+    try:
+        from .services import generer_contrat_location
+        contrat = generer_contrat_location(location)
+        
+        return Response(
+            {
+                "message": "Contrat généré avec succès",
+                "contrat": ContratLocationSerializer(contrat, context={'request': request}).data
+            },
+            status=status.HTTP_201_CREATED
+        )
+    except Exception as e:
+        return Response(
+            {"error": f"Erreur lors de la génération du contrat: {str(e)}"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
 # ========================================
 # VIEWSET CONTRAT LOCATION
 # ========================================
