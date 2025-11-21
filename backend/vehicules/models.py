@@ -541,6 +541,25 @@ class Vehicule(models.Model):
             categorie.mettre_a_jour_compteur()
 
 
+    def mettre_a_jour_note(self):
+        """
+        Met à jour la note moyenne du véhicule à partir des avis validés.
+        """
+        from django.db.models import Avg, Count
+        
+        # Calculer la moyenne des notes des avis validés
+        avis_valides = self.avis.filter(est_valide=True)
+        
+        stats = avis_valides.aggregate(
+            moyenne=Avg('note'),
+            total=Count('id')
+        )
+        
+        self.note_moyenne = stats['moyenne'] or 0
+        self.nombre_avis = stats['total'] or 0
+        
+        self.save(update_fields=['note_moyenne', 'nombre_avis'])
+
     @property
     def photo_principale(self):
         """Retourner la photo principale du véhicule."""

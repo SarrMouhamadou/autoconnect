@@ -22,6 +22,10 @@ urlpatterns = [
 
     # APIs Locations
     path('api/', include('locations.urls')),
+
+
+    # APIs Avis
+    path('api/', include('avis.urls')),
 ]
 
 # Servir les fichiers media en développement
