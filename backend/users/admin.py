@@ -2,7 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.html import format_html
 from .models import User, Role
-
+from notifications.models import Notification
+from django.utils import timezone
 
 # ========================================
 # ADMIN ROLE
@@ -167,7 +168,6 @@ class UserAdmin(BaseUserAdmin):
     
     def valider_concessionnaires(self, request, queryset):
         """Valider les comptes concessionnaires sélectionnés."""
-        from django.utils import timezone
         
         count = 0
         for user in queryset:
@@ -175,6 +175,11 @@ class UserAdmin(BaseUserAdmin):
                 user.est_valide = True
                 user.date_validation = timezone.now()
                 user.save()
+                
+                
+                # Notifier l'utilisateur
+                Notification.notifier_compte_valide(user)
+                
                 count += 1
         
         self.message_user(

@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from favoris.models import Historique
+from notifications.models import Notification
 
 from .models import Avis
 from .serializers import (
@@ -144,9 +145,9 @@ class AvisViewSet(viewsets.ModelViewSet):
             vehicule=avis.vehicule,
             request=self.request
         )
-        # TODO: Créer une notification pour le concessionnaire
-        # from notifications.models import Notification
-        # Notification.objects.create(...)
+
+        # Créer une notification pour le concessionnaire
+        Notification.notifier_avis_recu(avis)
         
         return avis
     
@@ -363,6 +364,62 @@ class AvisViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
     
+    @action(
+    detail=True,
+    methods=['patch'],
+    permission_classes=[permissions.IsAuthenticated, IsConcessionnaire]
+    )
+    def repondre(self, request, pk=None):
+        """
+        Répondre à un avis (Concessionnaire uniquement).
+        PATCH /api/avis/{id}/repondre/
+        
+        Body:
+        {
+            "reponse": "Merci pour votre retour..."
+        }
+        """
+        from django.utils import timezone
+        from rest_framework import serializers
+        
+        avis = self.get_object()
+        
+        # Vérifier que c'est bien le concessionnaire du véhicule
+        if avis.vehicule.concessionnaire != request.user:
+            raise PermissionDenied(
+                "Vous ne pouvez répondre qu'aux avis de vos véhicules"
+            )
+        
+        # Vérifier qu'une réponse n'existe pas déjà
+        if avis.a_reponse:
+            return Response(
+                {"error": "Vous avez déjà répondu à cet avis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Récupérer la réponse
+        reponse = request.data.get('reponse', '').strip()
+        
+        if not reponse or len(reponse) < 10:
+            return Response(
+                {"error": "La réponse doit contenir au moins 10 caractères"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Sauvegarder la réponse
+        avis.reponse = reponse
+        avis.date_reponse = timezone.now()
+        avis.repondu_par = request.user
+        avis.save(update_fields=['reponse', 'date_reponse', 'repondu_par'])
+        
+        # ✅ Notifier le client
+        Notification.notifier_avis_reponse(avis)
+        
+        return Response(
+            AvisSerializer(avis, context={'request': request}).data,
+            status=status.HTTP_200_OK
+        )
+
     @action(
         detail=True,
         methods=['post'],

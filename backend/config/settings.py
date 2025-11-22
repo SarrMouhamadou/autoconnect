@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     'concessions',
     'statistiques',
     'avis',
-    'favoris'
+    'favoris',
+    'notifications'
 ]
 
 MIDDLEWARE = [

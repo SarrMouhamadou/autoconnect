@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from favoris.models import Historique
+from notifications.models import Notification
 
 from .models import DemandeContact
 from .serializers import (
@@ -145,9 +146,9 @@ class DemandeContactViewSet(viewsets.ModelViewSet):
             request=self.request
         )
         
-        # TODO: Créer une notification pour le concessionnaire
-        # from notifications.models import Notification
-        # Notification.objects.create(...)
+        # Créer une notification pour le concessionnaire
+    
+        Notification.notifier_demande_recue(demande)
         
         return demande
     

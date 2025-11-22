@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from favoris.models import Historique
+from notifications.models import Notification
 
 from .models import Location, ContratLocation
 from .serializers import (
@@ -151,9 +152,16 @@ class LocationViewSet(viewsets.ModelViewSet):
             request=self.request
         )
 
-        # TODO: Créer une notification pour le concessionnaire
-        # from notifications.models import Notification
-        # Notification.objects.create(...)
+        # ✅ Créer une notification pour le concessionnaire
+        Notification.creer_notification(
+            destinataire=location.vehicule.concessionnaire,
+            type_notification='LOCATION_DEMANDEE',
+            titre="Nouvelle demande de location",
+            message=f"{location.client.nom_complet} souhaite louer {location.vehicule.nom_complet}",
+            niveau_priorite='HAUTE',
+            lien=f"/locations/{location.id}",
+            texte_action="Voir la demande"
+        )
         
         return location
     
@@ -274,7 +282,8 @@ class LocationViewSet(viewsets.ModelViewSet):
                 vehicule=location.vehicule
             )
 
-            # TODO: Notification au client
+           # ✅ Notification au client
+            Notification.notifier_location_confirmee(location)
             return Response(
                 LocationSerializer(location, context={'request': request}).data,
                 status=status.HTTP_200_OK
@@ -306,7 +315,10 @@ class LocationViewSet(viewsets.ModelViewSet):
         
         # Refuser
         if location.refuser():
-            # TODO: Notification au client
+
+            # Notification au client
+            Notification.notifier_location_refusee(location)
+        
             return Response(
                 {"message": "Location refusée avec succès"},
                 status=status.HTTP_200_OK
@@ -358,6 +370,17 @@ class LocationViewSet(viewsets.ModelViewSet):
                 type_action='DEPART_VEHICULE',
                 description=f"Départ du véhicule {location.vehicule.nom_complet}",
                 vehicule=location.vehicule
+            )
+
+            # ✅ Notification au client
+            Notification.creer_notification(
+                destinataire=location.client,
+                type_notification='LOCATION_DEPART',
+                titre="Départ du véhicule enregistré",
+                message=f"Le départ du véhicule {location.vehicule.nom_complet} a été enregistré. Bonne route !",
+                niveau_priorite='NORMALE',
+                lien=f"/locations/{location.id}",
+                texte_action="Voir ma location"
             )
             return Response(
                 LocationSerializer(location, context={'request': request}).data,
@@ -413,7 +436,17 @@ class LocationViewSet(viewsets.ModelViewSet):
                 description=f"Retour du véhicule {location.vehicule.nom_complet} - {location.kilometres_parcourus} km parcourus",
                 vehicule=location.vehicule
             )
-            # TODO: Notification au client
+            # ✅ Notification au client
+            Notification.creer_notification(
+                destinataire=location.client,
+                type_notification='LOCATION_RETOUR',
+                titre="Retour du véhicule enregistré",
+                message=f"Le retour du véhicule {location.vehicule.nom_complet} a été enregistré. Merci !",
+                niveau_priorite='NORMALE',
+                lien=f"/locations/{location.id}",
+                texte_action="Voir ma location"
+            )
+
             return Response(
                 LocationSerializer(location, context={'request': request}).data,
                 status=status.HTTP_200_OK

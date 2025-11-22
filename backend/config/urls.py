@@ -28,6 +28,9 @@ urlpatterns = [
 
     # APIs Favoris
     path('api/', include('favoris.urls')),
+
+    # APIs Notifications
+    path('api/', include('notifications.urls')),
 ]
 
 # Servir les fichiers media en développement
