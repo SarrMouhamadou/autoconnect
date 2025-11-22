@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import login
 from django.utils import timezone
 from .models import User
+from favoris.models import Historique
 
 from .serializers import (
     RegisterSerializer,
@@ -221,9 +222,18 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
         
+        # ✅ AJOUTER CES LIGNES
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=request.user,
+            type_action='MAJ_PROFIL',
+            description="Mise à jour du profil",
+            request=request
+        )
+        
         # Retourner le profil complet mis à jour
         user_serializer = UserSerializer(instance)
-        
+    
         return Response({
             'user': user_serializer.data,
             'message': 'Profil mis à jour avec succès'
@@ -268,6 +278,15 @@ class ChangePasswordView(APIView):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        
+        # ✅ AJOUTER CES LIGNES
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=request.user,
+            type_action='CHANGE_PASSWORD',
+            description="Changement de mot de passe",
+            request=request
+        )
         
         return Response({
             'message': 'Mot de passe modifié avec succès. Veuillez vous reconnecter.'
