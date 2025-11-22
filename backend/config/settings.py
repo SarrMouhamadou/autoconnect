@@ -56,7 +56,8 @@ INSTALLED_APPS = [
     'demands',
     'concessions',
     'statistiques',
-    'avis'
+    'avis',
+    'favoris'
 ]
 
 MIDDLEWARE = [

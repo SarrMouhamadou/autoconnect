@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from favoris.models import Historique
 
 from .models import Location, ContratLocation
 from .serializers import (
@@ -141,6 +142,15 @@ class LocationViewSet(viewsets.ModelViewSet):
         """Créer une demande de location."""
         location = serializer.save(client=self.request.user)
         
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=self.request.user,
+            type_action='DEMANDE_LOCATION',
+            description=f"Demande de location pour {location.vehicule.nom_complet} du {location.date_debut} au {location.date_fin}",
+            vehicule=location.vehicule,
+            request=self.request
+        )
+
         # TODO: Créer une notification pour le concessionnaire
         # from notifications.models import Notification
         # Notification.objects.create(...)
@@ -171,6 +181,15 @@ class LocationViewSet(viewsets.ModelViewSet):
         # Annuler
         instance.statut = 'ANNULEE'
         instance.save(update_fields=['statut'])
+
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=request.user,
+            type_action='LOCATION_ANNULEE',
+            description=f"Location annulée pour {instance.vehicule.nom_complet}",
+            vehicule=instance.vehicule,
+            request=request
+        )
         
         return Response(
             {"message": "Demande de location annulée avec succès"},
@@ -246,6 +265,15 @@ class LocationViewSet(viewsets.ModelViewSet):
         
         # Confirmer
         if location.confirmer():
+
+            # Enregistrer dans l'historique du client
+            Historique.enregistrer_action(
+                utilisateur=location.client,
+                type_action='LOCATION_CONFIRMEE',
+                description=f"Location confirmée pour {location.vehicule.nom_complet}",
+                vehicule=location.vehicule
+            )
+
             # TODO: Notification au client
             return Response(
                 LocationSerializer(location, context={'request': request}).data,
@@ -323,6 +351,14 @@ class LocationViewSet(viewsets.ModelViewSet):
             kilometrage=serializer.validated_data['kilometrage_depart'],
             etat=serializer.validated_data.get('etat_depart', '')
         ):
+            
+            # Enregistrer dans l'historique du client
+            Historique.enregistrer_action(
+                utilisateur=location.client,
+                type_action='DEPART_VEHICULE',
+                description=f"Départ du véhicule {location.vehicule.nom_complet}",
+                vehicule=location.vehicule
+            )
             return Response(
                 LocationSerializer(location, context={'request': request}).data,
                 status=status.HTTP_200_OK
@@ -370,6 +406,13 @@ class LocationViewSet(viewsets.ModelViewSet):
             kilometrage=serializer.validated_data['kilometrage_retour'],
             etat=serializer.validated_data.get('etat_retour', '')
         ):
+            # Enregistrer dans l'historique du client
+            Historique.enregistrer_action(
+                utilisateur=location.client,
+                type_action='RETOUR_VEHICULE',
+                description=f"Retour du véhicule {location.vehicule.nom_complet} - {location.kilometres_parcourus} km parcourus",
+                vehicule=location.vehicule
+            )
             # TODO: Notification au client
             return Response(
                 LocationSerializer(location, context={'request': request}).data,

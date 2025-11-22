@@ -6,6 +6,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from favoris.models import Historique
 
 from .models import Avis
 from .serializers import (
@@ -135,6 +136,14 @@ class AvisViewSet(viewsets.ModelViewSet):
         """Créer un avis."""
         avis = serializer.save(client=self.request.user)
         
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=self.request.user,
+            type_action='AVIS_PUBLIE',
+            description=f"Avis publié sur {avis.vehicule.nom_complet} - Note: {avis.note}/5",
+            vehicule=avis.vehicule,
+            request=self.request
+        )
         # TODO: Créer une notification pour le concessionnaire
         # from notifications.models import Notification
         # Notification.objects.create(...)
@@ -149,7 +158,16 @@ class AvisViewSet(viewsets.ModelViewSet):
                 "Vous ne pouvez modifier que vos propres avis"
             )
         
-        serializer.save()
+        avis = serializer.save()
+
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=self.request.user,
+            type_action='AVIS_MODIFIE',
+            description=f"Avis modifié sur {avis.vehicule.nom_complet}",
+            vehicule=avis.vehicule,
+            request=self.request
+        )
     
     def perform_destroy(self, instance):
         """Supprimer un avis."""

@@ -1,11 +1,9 @@
-# backend/vehicules/views.py
-# VERSION AVEC PHOTO ET VIDEO (conforme au diagramme)
-
 from rest_framework import viewsets, permissions, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from favoris.models import Historique
 
 from vehicules.models import Marque, Categorie, Vehicule, Photo, Video
 from vehicules.serializers import (
@@ -223,6 +221,16 @@ class VehiculeViewSet(viewsets.ModelViewSet):
             instance.incrementer_vues()
         
         serializer = self.get_serializer(instance)
+
+        # Enregistrer dans l'historique
+        if request.user.is_authenticated and request.user.is_client():
+            Historique.enregistrer_action(
+                utilisateur=request.user,
+                type_action='CONSULTATION_VEHICULE',
+                description=f"Consulté {instance.nom_complet}",
+                vehicule=instance,
+                request=request
+            )
         return Response(serializer.data)
     
     # ========================================

@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
+from favoris.models import Historique
 
 from .models import DemandeContact
 from .serializers import (
@@ -127,6 +128,22 @@ class DemandeContactViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Créer une demande et l'attribuer au client connecté."""
         demande = serializer.save(client=self.request.user)
+
+        # Enregistrer dans l'historique
+        type_mapping = {
+            'CONTACT': 'DEMANDE_CONTACT',
+            'ESSAI': 'DEMANDE_ESSAI',
+            'DEVIS': 'DEMANDE_DEVIS',
+            'INFORMATION': 'DEMANDE_CONTACT',
+        }
+        
+        Historique.enregistrer_action(
+            utilisateur=self.request.user,
+            type_action=type_mapping.get(demande.type_demande, 'DEMANDE_CONTACT'),
+            description=f"Demande de {demande.get_type_demande_display()} pour {demande.vehicule.nom_complet}",
+            vehicule=demande.vehicule,
+            request=self.request
+        )
         
         # TODO: Créer une notification pour le concessionnaire
         # from notifications.models import Notification

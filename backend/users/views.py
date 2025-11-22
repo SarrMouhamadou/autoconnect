@@ -5,6 +5,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import login
 from django.utils import timezone
 from .models import User
+
 from .serializers import (
     RegisterSerializer,
     LoginSerializer,
