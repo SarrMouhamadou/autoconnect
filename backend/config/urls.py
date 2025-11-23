@@ -31,6 +31,9 @@ urlpatterns = [
 
     # APIs Notifications
     path('api/', include('notifications.urls')),
+
+    # APIs Promotions
+    path('api/', include('promotions.urls')),
 ]
 
 # Servir les fichiers media en développement

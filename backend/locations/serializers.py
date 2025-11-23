@@ -7,7 +7,7 @@ from users.models import User
 from vehicules.models import Vehicule
 from concessions.models import Concession
 from decimal import Decimal
-
+from promotions.models import Promotion, UtilisationPromotion
 
 # ========================================
 # SERIALIZERS MINIMAUX (pour relations)
@@ -124,6 +124,18 @@ class LocationSerializer(serializers.ModelSerializer):
     kilometres_parcourus = serializers.ReadOnlyField()
     est_en_retard = serializers.ReadOnlyField()
     montant_total_final = serializers.ReadOnlyField()
+
+    # Promotion
+    promotion_nom = serializers.CharField(
+        source='promotion.nom',
+        read_only=True,
+        allow_null=True
+    )
+    promotion_code = serializers.CharField(
+        source='promotion.code',
+        read_only=True,
+        allow_null=True
+    )
     
     class Meta:
         model = Location
@@ -179,6 +191,14 @@ class LocationSerializer(serializers.ModelSerializer):
             # Dates
             'date_creation',
             'date_modification',
+
+            # Promotion
+            'promotion',
+            'promotion_nom',
+            'promotion_code',
+            'code_promo_utilise',
+            'montant_reduction',
+            'prix_avant_reduction',
         ]
         read_only_fields = [
             'client',
@@ -253,7 +273,13 @@ class LocationCreateSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
-    
+
+    code_promo = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        write_only=True
+    )
+
     class Meta:
         model = Location
         fields = [
@@ -261,6 +287,7 @@ class LocationCreateSerializer(serializers.ModelSerializer):
             'date_debut',
             'date_fin',
             'notes_client',
+            'code_promo',
         ]
     
     def validate(self, data):
@@ -306,22 +333,76 @@ class LocationCreateSerializer(serializers.ModelSerializer):
         return value
     
     def create(self, validated_data):
-        """Créer la demande de location."""
-        vehicule = validated_data['vehicule']
+        """Créer la location avec calcul du coût et application promo."""
+        code_promo = validated_data.pop('code_promo', None)
         
-        # Copier les informations du véhicule
-        validated_data['client'] = self.context['request'].user
-        validated_data['concessionnaire'] = vehicule.concessionnaire
-        validated_data['concession'] = vehicule.concession
-        validated_data['prix_jour'] = vehicule.prix_location_jour
+        # Récupérer les données
+        vehicule = validated_data['vehicule']
+        date_debut = validated_data['date_debut']
+        date_fin = validated_data['date_fin']
+        
+        # Nombre de jours
+        nb_jours = (date_fin - date_debut).days
+        if nb_jours < 1:
+            nb_jours = 1
+        
+        # Prix de base
+        prix_jour = vehicule.prix_location_jour
+        prix_base = prix_jour * nb_jours
+        
+        # Initialiser les valeurs
+        validated_data['prix_jour'] = prix_jour
+        validated_data['nombre_jours'] = nb_jours
+        validated_data['prix_total'] = prix_base
+        validated_data['prix_avant_reduction'] = prix_base
         validated_data['caution'] = vehicule.caution or Decimal('0.00')
         
-        # Le reste (nombre_jours, prix_total) est calculé dans le save() du modèle
+        # Le concessionnaire est le propriétaire du véhicule
+        validated_data['concessionnaire'] = vehicule.concessionnaire
+        validated_data['concession'] = vehicule.concession
         
+        # Appliquer le code promo si fourni
+        promotion = None
+        montant_reduction = Decimal('0.00')
+        
+        if code_promo:
+            try:
+                promotion = Promotion.objects.get(code=code_promo.upper().strip())
+                
+                # Vérifier si applicable
+                client = self.context['request'].user
+                peut_utiliser, message = promotion.peut_etre_utilise_par(client)
+                
+                if peut_utiliser and promotion.applicable_a_vehicule(vehicule):
+                    # Vérifier montant minimum
+                    if not promotion.montant_minimum or prix_base >= promotion.montant_minimum:
+                        # Calculer la réduction
+                        montant_reduction = promotion.calculer_reduction(prix_base)
+                        
+                        validated_data['promotion'] = promotion
+                        validated_data['code_promo_utilise'] = promotion.code
+                        validated_data['montant_reduction'] = montant_reduction
+                        validated_data['prix_total'] = prix_base - montant_reduction
+            except Promotion.DoesNotExist:
+                pass  # Code invalide, on ignore silencieusement
+        
+        # Créer la location
         location = Location.objects.create(**validated_data)
         
+        # Enregistrer l'utilisation de la promotion
+        if promotion and montant_reduction > 0:
+            UtilisationPromotion.objects.create(
+                promotion=promotion,
+                client=location.client,
+                location=location,
+                montant_reduction=montant_reduction
+            )
+            
+            # Incrémenter le compteur
+            promotion.nombre_utilisations += 1
+            promotion.save(update_fields=['nombre_utilisations'])
+        
         return location
-
 
 # ========================================
 # SERIALIZER DÉPART

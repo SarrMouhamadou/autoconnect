@@ -6,6 +6,7 @@ from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from .models import Location, ContratLocation
+from promotions.models import Promotion, UtilisationPromotion
 
 
 @admin.register(Location)
@@ -56,6 +57,10 @@ class LocationAdmin(admin.ModelAdmin):
         'duree_reelle_display',
         'kilometres_parcourus_display',
         'montant_total_final_display',
+        'promotion',
+        'code_promo_utilise',
+        'montant_reduction',
+        'prix_avant_reduction',
     ]
     
     fieldsets = (
@@ -116,6 +121,16 @@ class LocationAdmin(admin.ModelAdmin):
             ),
             'classes': ('collapse',)
         }),
+        ('Promotion', {
+        'fields': (
+            'promotion',
+            'code_promo_utilise',
+            'prix_avant_reduction',
+            'montant_reduction',
+            'cout_total',
+        ),
+        'classes': ('collapse',)
+    }),
     )
     
     actions = [

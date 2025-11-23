@@ -9,6 +9,7 @@ from vehicules.models import Vehicule
 from concessions.models import Concession
 from decimal import Decimal
 import uuid
+from promotions.models import Promotion, UtilisationPromotion
 
 
 # ========================================
@@ -121,6 +122,40 @@ class Location(models.Model):
         decimal_places=2,
         validators=[MinValueValidator(Decimal('0.00'))],
         verbose_name="Montant de la caution (FCFA)"
+    )
+
+    # ========================================
+    # PROMOTION APPLIQUÉE
+    # ========================================
+
+    promotion = models.ForeignKey(
+        'promotions.Promotion',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='locations',
+        verbose_name="Promotion appliquée"
+    )
+
+    code_promo_utilise = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name="Code promo utilisé"
+    )
+
+    montant_reduction = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name="Montant de la réduction (FCFA)"
+    )
+
+    prix_avant_reduction = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        verbose_name="Prix avant réduction (FCFA)"
     )
     
     # ========================================
@@ -386,6 +421,7 @@ class Location(models.Model):
     def montant_total_final(self):
         """Calculer le montant total final (location + pénalités)."""
         return self.prix_total + self.montant_penalite
+
 
 
 # ========================================
