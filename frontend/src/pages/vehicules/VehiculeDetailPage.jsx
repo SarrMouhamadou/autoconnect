@@ -6,6 +6,7 @@ import {
   FiArrowLeft, FiMapPin, FiCheck, FiCalendar,
   FiUser, FiPhone, FiMail, FiChevronLeft, FiChevronRight
 } from 'react-icons/fi';
+import VehiculeLocationMap from '../../components/vehicules/VehiculeLocationMap';
 
 export default function VehiculeDetailPage() {
   const { id } = useParams();
@@ -88,7 +89,7 @@ export default function VehiculeDetailPage() {
                   to="/dashboard"
                   className="px-4 py-2 text-teal-600 hover:text-teal-700"
                 >
-                  Dashboard
+                  Tableau de bord
                 </Link>
               ) : (
                 <Link
@@ -103,24 +104,25 @@ export default function VehiculeDetailPage() {
         </div>
       </div>
 
-      {/* Contenu */}
+      {/* Contenu principal */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
-          <Link to="/vehicules" className="hover:text-teal-600">
-            Catalogue
-          </Link>
-          <span>/</span>
-          <span className="text-gray-900">{vehicule.nom_complet}</span>
-        </div>
+        {/* Bouton retour */}
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 mb-6"
+        >
+          <FiArrowLeft />
+          <span>Retour</span>
+        </button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Colonne gauche - Images et infos */}
+          {/* Colonne gauche - Détails véhicule */}
           <div className="lg:col-span-2 space-y-6">
             {/* Galerie d'images */}
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
               {allImages.length > 0 ? (
                 <div className="relative">
+                  {/* Image principale */}
                   <img
                     src={allImages[currentImageIndex]}
                     alt={vehicule.nom_complet}
@@ -132,26 +134,26 @@ export default function VehiculeDetailPage() {
                     <>
                       <button
                         onClick={prevImage}
-                        className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 bg-white/90 rounded-full hover:bg-white shadow-lg"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
                       >
                         <FiChevronLeft className="w-6 h-6" />
                       </button>
                       <button
                         onClick={nextImage}
-                        className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-white/90 rounded-full hover:bg-white shadow-lg"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-2 rounded-full shadow-lg"
                       >
                         <FiChevronRight className="w-6 h-6" />
                       </button>
 
                       {/* Indicateurs */}
-                      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2">
                         {allImages.map((_, index) => (
                           <button
                             key={index}
                             onClick={() => setCurrentImageIndex(index)}
-                            className={`w-2 h-2 rounded-full ${index === currentImageIndex
-                              ? 'bg-white'
-                              : 'bg-white/50'
+                            className={`w-2 h-2 rounded-full transition-all ${index === currentImageIndex
+                                ? 'bg-white w-8'
+                                : 'bg-white/50'
                               }`}
                           />
                         ))}
@@ -173,8 +175,8 @@ export default function VehiculeDetailPage() {
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`flex-shrink-0 ${index === currentImageIndex
-                        ? 'ring-2 ring-teal-600'
-                        : ''
+                          ? 'ring-2 ring-teal-600'
+                          : ''
                         }`}
                     >
                       <img
@@ -186,6 +188,61 @@ export default function VehiculeDetailPage() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* Titre et prix */}
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {vehicule.nom_complet}
+                  </h1>
+                  <div className="flex items-center space-x-2 text-gray-600">
+                    <FiMapPin className="w-4 h-4" />
+                    <span>
+                      {vehicule.concession?.ville || 'Non spécifié'},{' '}
+                      {vehicule.concession?.region || 'Sénégal'}
+                    </span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  {vehicule.disponible_location && (
+                    <div className="text-3xl font-bold text-teal-600 mb-1">
+                      {vehicule.prix_location_jour?.toLocaleString()} FCFA
+                      <span className="text-lg font-normal text-gray-600">
+                        /jour
+                      </span>
+                    </div>
+                  )}
+                  {vehicule.disponible_vente && (
+                    <div className="text-2xl font-bold text-gray-900">
+                      {vehicule.prix_vente?.toLocaleString()} FCFA
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2">
+                {vehicule.disponible_location && (
+                  <span className="px-3 py-1 bg-teal-100 text-teal-700 text-sm font-medium rounded-full">
+                    Location
+                  </span>
+                )}
+                {vehicule.disponible_vente && (
+                  <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                    Vente
+                  </span>
+                )}
+                <span
+                  className={`px-3 py-1 text-sm font-medium rounded-full ${vehicule.statut === 'DISPONIBLE'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-700'
+                    }`}
+                >
+                  {vehicule.statut}
+                </span>
+              </div>
             </div>
 
             {/* Description */}
@@ -232,7 +289,9 @@ export default function VehiculeDetailPage() {
                   <span className="text-2xl">👥</span>
                   <div>
                     <div className="text-sm text-gray-600">Places</div>
-                    <div className="font-medium">{vehicule.nombre_places} places</div>
+                    <div className="font-medium">
+                      {vehicule.nombre_places} places
+                    </div>
                   </div>
                 </div>
 
@@ -240,7 +299,9 @@ export default function VehiculeDetailPage() {
                   <span className="text-2xl">🚪</span>
                   <div>
                     <div className="text-sm text-gray-600">Portes</div>
-                    <div className="font-medium">{vehicule.nombre_portes} portes</div>
+                    <div className="font-medium">
+                      {vehicule.nombre_portes} portes
+                    </div>
                   </div>
                 </div>
 
@@ -254,23 +315,29 @@ export default function VehiculeDetailPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">📏</span>
-                  <div>
-                    <div className="text-sm text-gray-600">Kilométrage</div>
-                    <div className="font-medium">
-                      {parseInt(vehicule.kilometrage).toLocaleString('fr-FR')} km
+                {vehicule.kilometrage && (
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">📏</span>
+                    <div>
+                      <div className="text-sm text-gray-600">Kilométrage</div>
+                      <div className="font-medium">
+                        {vehicule.kilometrage.toLocaleString()} km
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                <div className="flex items-center space-x-3">
-                  <span className="text-2xl">🎨</span>
-                  <div>
-                    <div className="text-sm text-gray-600">Couleur</div>
-                    <div className="font-medium">{vehicule.couleur}</div>
+                {vehicule.annee_fabrication && (
+                  <div className="flex items-center space-x-3">
+                    <span className="text-2xl">📅</span>
+                    <div>
+                      <div className="text-sm text-gray-600">Année</div>
+                      <div className="font-medium">
+                        {vehicule.annee_fabrication}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -280,125 +347,85 @@ export default function VehiculeDetailPage() {
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">
                   Équipements
                 </h2>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {vehicule.equipements.map((equipement, index) => (
-                    <div key={index} className="flex items-center space-x-2">
-                      <FiCheck className="text-teal-600 flex-shrink-0" />
-                      <span className="text-gray-700">{equipement}</span>
+                    <div
+                      key={index}
+                      className="flex items-center space-x-2 text-gray-700"
+                    >
+                      <FiCheck className="w-5 h-5 text-teal-600" />
+                      <span>{equipement}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Carte de localisation */}
+            {vehicule.concession && (
+              <VehiculeLocationMap concession={vehicule.concession} />
+            )}
           </div>
 
-          {/* Colonne droite - Réservation */}
+          {/* Colonne droite - Réservation/Contact */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-              {/* Prix */}
-              <div className="mb-6">
-                {/* Afficher prix location si disponible */}
-                {vehicule.est_disponible_location && vehicule.prix_location_jour && (
-                  <>
-                    <div className="text-3xl font-bold text-blue-600 mb-1">
-                      {parseInt(vehicule.prix_location_jour).toLocaleString('fr-FR')} FCFA
-                    </div>
-                    <div className="text-sm text-gray-600">par jour</div>
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                Réserver ce véhicule
+              </h3>
 
-                    {vehicule.est_disponible_vente && vehicule.prix_vente && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="text-2xl font-bold text-teal-600">
-                          {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
-                        </div>
-                        <div className="text-xs text-gray-600">prix de vente</div>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {/* Afficher uniquement prix vente si pas de location */}
-                {!vehicule.est_disponible_location && vehicule.est_disponible_vente && vehicule.prix_vente && (
-                  <>
-                    <div className="text-3xl font-bold text-teal-600 mb-1">
-                      {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
-                    </div>
-                    <div className="text-sm text-gray-600">prix de vente</div>
-                  </>
-                )}
-
-                {/* Si aucun prix */}
-                {!vehicule.prix_location_jour && !vehicule.prix_vente && (
-                  <div className="text-xl text-gray-500">
-                    Prix non disponible
+              {vehicule.disponible_location && (
+                <div className="mb-4">
+                  <div className="text-sm text-gray-600 mb-1">
+                    Prix par jour
                   </div>
-                )}
-              </div>
-
-              {/* Badges type d'offre */}
-              <div className="mb-6 flex flex-wrap gap-2">
-                {vehicule.est_disponible_vente && (
-                  <span className="inline-flex items-center px-3 py-1 bg-teal-100 text-teal-800 rounded-full text-sm font-medium">
-                    🏷️ Disponible à la vente
-                  </span>
-                )}
-                {vehicule.est_disponible_location && (
-                  <span className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    📅 Disponible à la location
-                  </span>
-                )}
-              </div>
-
-              {/* Caution (uniquement si location) */}
-              {vehicule.est_disponible_location && vehicule.caution > 0 && (
-                <div className="mb-6 p-3 bg-gray-50 rounded-lg">
-                  <div className="text-sm text-gray-600">Caution</div>
-                  <div className="text-lg font-semibold text-gray-900">
-                    {parseInt(vehicule.caution).toLocaleString('fr-FR')} FCFA
+                  <div className="text-2xl font-bold text-teal-600">
+                    {vehicule.prix_location_jour?.toLocaleString()} FCFA
                   </div>
                 </div>
               )}
 
-              {/* Statut */}
-              <div className="mb-6">
-                <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                  Disponible
-                </span>
-              </div>
+              {vehicule.disponible_vente && (
+                <div className="mb-4">
+                  <div className="text-sm text-gray-600 mb-1">Prix de vente</div>
+                  <div className="text-2xl font-bold text-gray-900">
+                    {vehicule.prix_vente?.toLocaleString()} FCFA
+                  </div>
+                </div>
+              )}
 
-              {/* Boutons d'action */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-3">
                 {user ? (
                   <>
-                    {vehicule.est_disponible_location && (
-                      <button className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
-                        Réserver pour une location
-                      </button>
+                    {vehicule.disponible_location && (
+                      <Link
+                        to={`/vehicules/${vehicule.id}/reserver`}
+                        className="block w-full bg-teal-600 hover:bg-teal-700 text-white text-center py-3 rounded-lg font-medium transition-colors"
+                      >
+                        Réserver maintenant
+                      </Link>
                     )}
-
-                    {vehicule.est_disponible_vente && (
-                      <button className="w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium">
-                        Faire une offre d'achat
-                      </button>
-                    )}
-
-                    <button className="w-full px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-medium">
+                    <Link
+                      to={`/vehicules/${vehicule.id}/demande`}
+                      className="block w-full bg-gray-100 hover:bg-gray-200 text-gray-900 text-center py-3 rounded-lg font-medium transition-colors"
+                    >
                       Demander un devis
-                    </button>
+                    </Link>
                   </>
                 ) : (
                   <Link
-                    to="/login"
-                    className="block w-full px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium text-center"
+                    to={`/login?redirect=/vehicules/${vehicule.id}`}
+                    className="block w-full bg-teal-600 hover:bg-teal-700 text-white text-center py-3 rounded-lg font-medium transition-colors"
                   >
-                    Se connecter pour {vehicule.est_disponible_location ? 'réserver' : 'acheter'}
+                    Se connecter pour{' '}
+                    {vehicule.disponible_location ? 'réserver' : 'acheter'}
                   </Link>
                 )}
               </div>
 
               {/* Infos concessionnaire */}
               {vehicule.concessionnaire && (
-                <div className="pt-6 border-t">
+                <div className="pt-6 border-t mt-6">
                   <h3 className="font-semibold text-gray-900 mb-3">
                     Concessionnaire
                   </h3>
@@ -411,6 +438,12 @@ export default function VehiculeDetailPage() {
                       <div className="flex items-center space-x-2 text-gray-700">
                         <FiPhone className="w-4 h-4" />
                         <span>{vehicule.concessionnaire.telephone}</span>
+                      </div>
+                    )}
+                    {vehicule.concessionnaire.email && (
+                      <div className="flex items-center space-x-2 text-gray-700">
+                        <FiMail className="w-4 h-4" />
+                        <span>{vehicule.concessionnaire.email}</span>
                       </div>
                     )}
                     {vehicule.concessionnaire.adresse && (

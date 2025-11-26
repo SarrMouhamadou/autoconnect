@@ -43,6 +43,7 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />  {/* ← NOUVELLE ROUTE */}
           <Route path="/login" element={<Navigate to="/auth?mode=login" replace />} />  {/* ← Redirection */}
           <Route path="/register" element={<Navigate to="/auth?mode=signup" replace />} />  {/* ← Redirection */}
+          <Route path="/vehicules/:id" element={<VehiculeDetailPage />} />
 
 
           {/* ================================ */}
