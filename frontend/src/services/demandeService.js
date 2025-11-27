@@ -41,11 +41,11 @@ const demandeService = {
 
   /**
    * Récupérer mes demandes (client connecté)
-   * GET /api/demands/mes-demandes/
+   * GET /api/demands/mes_demandes/
    */
   async getMesDemandes(params = {}) {
     try {
-      const response = await api.get('/demands/mes-demandes/', { params });
+      const response = await api.get('/demands/mes_demandes/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

@@ -39,6 +39,18 @@ import ConcessionsPage from './pages/concessions/ConcessionsPage';
 // Page Comparateur
 import ComparePage from './pages/compare/ComparePage';
 
+// Page Client
+import MesLocationsPage from './pages/client/MesLocationsPage';
+import LocationDetailPage from './pages/client/LocationDetailPage';
+import DemandesPage from './pages/client/DemandesPage';
+import FavorisPage from './pages/client/FavorisPage';
+import HistoriquePage from './pages/client/HistoriquePage';
+import AvisPage from './pages/client/AvisPage';
+import NotificationsPage from './pages/client/NotificationsPage';
+import DepensesPage from './pages/client/DepensesPage';
+import ParametresPage from './pages/client/ParametresPage';
+import AidePage from './pages/client/AidePage';
+import ReservationPage from './pages/vehicules/ReservationPage';
 
 function App() {
   return (
@@ -61,6 +73,9 @@ function App() {
 
             {/* Route Comparateur */}
             <Route path="/compare" element={<ComparePage />} />
+
+            {/* ROUTE RÉSERVATION - Publique mais vérifie auth dans le composant */}
+            <Route path="/vehicules/:id/reserver" element={<ReservationPage />} />
 
             {/* ================================ */}
             {/* ROUTES PROTÉGÉES */}
@@ -162,57 +177,102 @@ function App() {
             />
 
 
-            {/* ================================ */}
-            {/* ROUTES FUTURES (Phases 3-7) */}
-            {/* ================================ */}
+            {/* ROUTES CLIENT - Protégées */}
 
-            {/* Véhicules (Phase 3) - À venir */}
-            {/* 
-            <Route 
-              path="/vehicles" 
+
+            <Route
+              path="/client/locations"
               element={
                 <ProtectedRoute allowedRoles={['CLIENT']}>
-                  <VehiclesPage />
+                  <MesLocationsPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            */}
-
-            {/* Locations (Phase 4) - À venir */}
-            {/* 
-            <Route 
-              path="/my-rentals" 
+            <Route
+              path="/client/locations/:id"
               element={
                 <ProtectedRoute allowedRoles={['CLIENT']}>
-                  <MyRentalsPage />
+                  <LocationDetailPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            */}
-
-            {/* Concessionnaires (Phase 5) - À venir */}
-            {/* 
-            <Route 
-              path="/my-vehicles" 
+            <Route
+              path="/client/demandes"
               element={
-                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
-                  <MyVehiclesPage />
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <DemandesPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            */}
-
-            {/* Admin (Phase 6) - À venir */}
-            {/* 
-            <Route 
-              path="/admin/users" 
+            <Route
+              path="/client/favoris"
               element={
-                <ProtectedRoute allowedRoles={['ADMINISTRATEUR']}>
-                  <AdminUsersPage />
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <FavorisPage />
                 </ProtectedRoute>
-              } 
+              }
             />
-            */}
+            <Route
+              path="/client/historique"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <HistoriquePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/avis"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <AvisPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <NotificationsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/client/depenses"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <DepensesPage />
+                </ProtectedRoute>
+              }
+            />
+
+
+            <Route
+              path="/client/profil"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <SettingsPage />
+                </ProtectedRoute>
+              }
+            />
+
+
+            <Route
+              path="/client/parametres"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <ParametresPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/client/aide"
+              element={
+                <ProtectedRoute allowedRoles={['CLIENT']}>
+                  <AidePage />
+                </ProtectedRoute>
+              }
+            />
 
             {/* ================================ */}
             {/* ROUTE 404 - PAGE NON TROUVÉE */}

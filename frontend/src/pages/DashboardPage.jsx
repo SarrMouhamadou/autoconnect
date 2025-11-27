@@ -4,398 +4,732 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import StatCard from '../components/dashboard/StatCard';
 import RevenueChart from '../components/dashboard/RevenueChart';
-import CalendarWidget from '../components/dashboard/CalendarWidget';
-import GaugeWidget from '../components/dashboard/GaugeWidget';
-import TransactionsTable from '../components/dashboard/TransactionsTable';
-import MesConcessionsWidget from '../components/dashboard/MesConcessionsWidget';
-import ConcessionSelector from '../components/dashboard/ConcessionSelector';
-import ConcessionRequiredAlert from '../components/dashboard/ConcessionRequiredAlert';
-import { dashboardData } from '../data/mockData';
-import vehiculeService from '../services/vehiculeService';
-import concessionService from '../services/concessionService';
-import { FiTruck, FiPlus } from 'react-icons/fi';
+import { FaCar } from "react-icons/fa";
 
+import {
+  FiCalendar, FiDollarSign, FiTrendingUp, FiUsers,
+  FiMapPin, FiAlertCircle, FiMessageSquare, FiClock,
+  FiStar, FiBell, FiFileText, FiSettings, FiHelpCircle,
+  FiChevronRight, FiAlertTriangle, FiCheckCircle
+} from 'react-icons/fi';
+
+import locationService from '../services/locationService';
+import vehiculeService from '../services/vehiculeService';
+import statistiqueService from '../services/statistiqueService';
+import historiqueService from '../services/historiqueService';
+import notificationService from '../services/notificationService';
+import favoriService from '../services/favoriService';
 
 export default function DashboardPage() {
   const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
-  const [data, setData] = useState(null);
+
+  const [stats, setStats] = useState(null);
+  const [recentActivity, setRecentActivity] = useState([]);
+  const [alerts, setAlerts] = useState([]);
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedConcession, setSelectedConcession] = useState('all');
+  const [error, setError] = useState(null);
 
-  // États pour concessionnaire
-  const [concessions, setConcessions] = useState([]);
-  const [concessionsLoading, setConcessionsLoading] = useState(true);
-  const [vehicleStats, setVehicleStats] = useState({
-    totalVehicules: 0,
-    vehiculesDisponibles: 0,
-    vehiculesLoues: 0,
-    vehiculesEnMaintenance: 0,
-  });
-  const [recentVehicles, setRecentVehicles] = useState([]);
-
-  // Charger les concessions du concessionnaire
-  const loadConcessions = async () => {
-    try {
-      setConcessionsLoading(true);
-      const data = await concessionService.getMesConcessions();
-      setConcessions(data.concessions || []);
-
-      // Si aucune concession sélectionnée et qu'il y a des concessions validées, sélectionner la première
-      if (data.concessions && data.concessions.length > 0) {
-        const validees = data.concessions.filter(c => c.statut === 'VALIDE');
-        if (validees.length > 0 && selectedConcession === 'all') {
-          setSelectedConcession(validees[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('Erreur chargement concessions:', error);
-      setConcessions([]);
-    } finally {
-      setConcessionsLoading(false);
-    }
-  };
-
-  // Charger les stats véhicules
-  const loadVehicleStats = async () => {
-    try {
-      const data = await vehiculeService.getMesVehicules();
-      const vehicules = data.results || data;
-
-      // Filtrer par concession si une concession est sélectionnée
-      const filteredVehicules = selectedConcession === 'all'
-        ? vehicules
-        : vehicules.filter(v => v.concession?.id === selectedConcession);
-
-      setVehicleStats({
-        totalVehicules: filteredVehicules.length,
-        vehiculesDisponibles: filteredVehicules.filter(v => v.statut === 'DISPONIBLE').length,
-        vehiculesLoues: filteredVehicules.filter(v => v.statut === 'LOUE').length,
-        vehiculesEnMaintenance: filteredVehicules.filter(v => v.statut === 'MAINTENANCE').length,
-      });
-
-      setRecentVehicles(filteredVehicules.slice(0, 3));
-    } catch (error) {
-      console.error('Erreur chargement stats véhicules:', error);
-    }
-  };
-
-  // Charger les données selon le rôle
   useEffect(() => {
-    const loadData = async () => {
+    if (isClient()) {
+      loadClientDashboard();
+    } else {
+      loadDashboardData();
+    }
+  }, [user]);
+
+  const loadClientDashboard = async () => {
+    try {
       setLoading(true);
 
-      // Simuler un appel API
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Charger toutes les données en parallèle
+      const [
+        locationsData,
+        statsData,
+        historiqueData,
+        notificationsData,
+        favorisData
+      ] = await Promise.all([
+        locationService.getMesLocations().catch(() => ({ results: [] })),
+        statistiqueService.getDashboardClient().catch(() => ({})),
+        historiqueService.getHistoriqueRecent().catch(() => []),
+        notificationService.getMesNotifications().catch(() => []),
+        favoriService.getMesFavoris().catch(() => [])
+      ]);
 
-      if (isConcessionnaire()) {
-        setData(dashboardData.concessionnaire);
-        await loadConcessions();
-        await loadVehicleStats();
-      } else if (isClient()) {
-        setData(dashboardData.client);
-      } else {
-        setData(dashboardData.concessionnaire); // Par défaut pour l'instant
+      // Extraire les tableaux
+      const locations = Array.isArray(locationsData)
+        ? locationsData
+        : (locationsData.results || []);
+
+      const historique = Array.isArray(historiqueData)
+        ? historiqueData
+        : (historiqueData.results || []);
+
+      const notifications = Array.isArray(notificationsData)
+        ? notificationsData
+        : (notificationsData.results || []);
+
+      const favoris = Array.isArray(favorisData)
+        ? favorisData
+        : (favorisData.results || []);
+
+      // Calculer les statistiques
+      const locationsEnCours = locations.filter(l => l.statut === 'EN_COURS');
+      const locationsAVenir = locations.filter(l => l.statut === 'CONFIRMEE');
+      const montantTotal = locations.reduce((sum, l) => sum + parseFloat(l.prix_total || 0), 0);
+      const notificationsNonLues = notifications.filter(n => !n.lue);
+
+      // Préparer les alertes
+      const newAlerts = [];
+
+      // Alerte locations qui se terminent bientôt
+      locationsEnCours.forEach(location => {
+        if (location.date_fin) {
+          const dateFin = new Date(location.date_fin);
+          const now = new Date();
+          const diffJours = Math.ceil((dateFin - now) / (1000 * 60 * 60 * 24));
+
+          if (diffJours <= 2 && diffJours > 0) {
+            newAlerts.push({
+              type: 'warning',
+              icon: FiClock,
+              title: 'Location qui se termine bientôt',
+              message: `Votre location "${location.vehicule?.nom_complet}" se termine dans ${diffJours} jour${diffJours > 1 ? 's' : ''}`,
+              link: `/client/locations/${location.id}`
+            });
+          }
+        }
+      });
+
+      // Alerte baisses de prix sur favoris
+      const favorisAvecBaisse = favoris.filter(f => f.baisse_prix_detectee);
+      if (favorisAvecBaisse.length > 0) {
+        newAlerts.push({
+          type: 'success',
+          icon: FiTrendingUp,
+          title: `Baisse de prix sur ${favorisAvecBaisse.length} favori${favorisAvecBaisse.length > 1 ? 's' : ''}`,
+          message: 'Des véhicules dans vos favoris ont vu leur prix baisser !',
+          link: '/client/favoris'
+        });
       }
 
+      // Alerte notifications non lues
+      if (notificationsNonLues.length > 0) {
+        newAlerts.push({
+          type: 'info',
+          icon: FiBell,
+          title: `${notificationsNonLues.length} notification${notificationsNonLues.length > 1 ? 's' : ''} non lue${notificationsNonLues.length > 1 ? 's' : ''}`,
+          message: 'Vous avez de nouvelles notifications à consulter',
+          link: '/client/notifications'
+        });
+      }
+
+      setStats({
+        totalLocations: locations.length,
+        locationsEnCours: locationsEnCours.length,
+        locationsAVenir: locationsAVenir.length,
+        montantTotal,
+        totalFavoris: favoris.length,
+        demandesEnAttente: statsData?.demandes?.en_attente || 0,
+        avisPublies: statsData?.avis?.publies || 0,
+        notificationsNonLues: notificationsNonLues.length,
+        actionsRecentes: historiqueData?.length || 0,
+        ...statsData
+      });
+
+      setRecentActivity(historique.slice(0, 5));
+      setAlerts(newAlerts);
+
+      // Recommandations simples basées sur l'activité
+      if (historique.length > 0) {
+        setRecommendations([
+          {
+            title: 'Basé sur vos consultations',
+            description: 'Découvrez des véhicules similaires',
+            link: '/vehicules'
+          }
+        ]);
+      }
+
+    } catch (err) {
+      console.error('Erreur chargement dashboard:', err);
+      setError(err.message);
+    } finally {
       setLoading(false);
-    };
-
-    loadData();
-  }, [isConcessionnaire, isClient]);
-
-  // Recharger les stats véhicules quand la concession change
-  useEffect(() => {
-    if (isConcessionnaire() && !concessionsLoading) {
-      loadVehicleStats();
     }
-  }, [selectedConcession]);
+  };
 
-  if (loading) {
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      if (isConcessionnaire()) {
+        const [vehiculesData, statsData] = await Promise.all([
+          vehiculeService.getMesVehicules(),
+          statistiqueService.getDashboardConcessionnaire()
+        ]);
+
+        const vehicules = Array.isArray(vehiculesData)
+          ? vehiculesData
+          : (vehiculesData.results || []);
+
+        setStats({
+          totalVehicules: vehicules.length,
+          vehiculesDisponibles: vehicules.filter(v => v.statut === 'DISPONIBLE').length,
+          locationsActives: statsData?.locations?.en_cours || 0,
+          revenusTotal: statsData?.revenus?.total || 0,
+          ...statsData
+        });
+
+      } else if (isAdmin()) {
+        const statsData = await statistiqueService.getDashboardAdmin();
+        setStats(statsData);
+      }
+
+    } catch (err) {
+      console.error('Erreur chargement dashboard:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fonction pour formater les dates relatives
+  const formatRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "À l'instant";
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours}h`;
+    if (diffDays < 7) return `Il y a ${diffDays}j`;
+    return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  };
+
+  // Icônes pour les types d'actions
+  const getActionIcon = (typeAction) => {
+    const icons = {
+      CONSULTATION_VEHICULE: { icon: FiCar, color: 'text-blue-600' },
+      AJOUT_FAVORI: { icon: FiStar, color: 'text-yellow-600' },
+      DEMANDE_CONTACT: { icon: FiMessageSquare, color: 'text-purple-600' },
+      RESERVATION: { icon: FiCalendar, color: 'text-green-600' }
+    };
+    return icons[typeAction] || { icon: FiFileText, color: 'text-gray-600' };
+  };
+
+  // Dashboard CLIENT AMÉLIORÉ
+  if (isClient()) {
     return (
-      <DashboardLayout title="Dashboard">
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+      <DashboardLayout title="Tableau de bord">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bienvenue, {user?.prenom || 'Client'} ! 👋
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Voici un aperçu complet de votre activité
+          </p>
         </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+            <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-red-800">Erreur</h3>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* ALERTES */}
+            {alerts.length > 0 && (
+              <div className="mb-6 space-y-3">
+                {alerts.map((alert, index) => (
+                  <Link
+                    key={index}
+                    to={alert.link}
+                    className={`block rounded-lg p-4 transition hover:shadow-md ${alert.type === 'warning'
+                      ? 'bg-yellow-50 border border-yellow-200'
+                      : alert.type === 'success'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-blue-50 border border-blue-200'
+                      }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <alert.icon
+                        className={`w-5 h-5 flex-shrink-0 mt-0.5 ${alert.type === 'warning'
+                          ? 'text-yellow-600'
+                          : alert.type === 'success'
+                            ? 'text-green-600'
+                            : 'text-blue-600'
+                          }`}
+                      />
+                      <div className="flex-1">
+                        <h3
+                          className={`font-medium ${alert.type === 'warning'
+                            ? 'text-yellow-800'
+                            : alert.type === 'success'
+                              ? 'text-green-800'
+                              : 'text-blue-800'
+                            }`}
+                        >
+                          {alert.title}
+                        </h3>
+                        <p
+                          className={`text-sm mt-1 ${alert.type === 'warning'
+                            ? 'text-yellow-700'
+                            : alert.type === 'success'
+                              ? 'text-green-700'
+                              : 'text-blue-700'
+                            }`}
+                        >
+                          {alert.message}
+                        </p>
+                      </div>
+                      <FiChevronRight className="w-5 h-5 text-gray-400" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* STATISTIQUES - 8 CARTES CLIQUABLES */}
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Link to="/client/locations" className="block">
+                <StatCard
+                  title="Mes locations"
+                  value={stats?.totalLocations || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="📅"
+                />
+              </Link>
+
+              <Link to="/client/locations" className="block">
+                <StatCard
+                  title="En cours"
+                  value={stats?.locationsEnCours || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="🚗"
+                />
+              </Link>
+
+              <Link to="/client/depenses" className="block">
+                <StatCard
+                  title="Dépenses totales"
+                  value={`${Math.round(stats?.montantTotal || 0).toLocaleString('fr-FR')} FCFA`}
+                  change={0}
+                  trend="neutral"
+                  icon="💰"
+                />
+              </Link>
+
+              <Link to="/client/favoris" className="block">
+                <StatCard
+                  title="Favoris"
+                  value={stats?.totalFavoris || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="⭐"
+                />
+              </Link>
+
+              <Link to="/client/demandes" className="block">
+                <StatCard
+                  title="Demandes"
+                  value={stats?.demandesEnAttente || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="📋"
+                />
+              </Link>
+
+              <Link to="/client/avis" className="block">
+                <StatCard
+                  title="Avis publiés"
+                  value={stats?.avisPublies || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="💬"
+                />
+              </Link>
+
+              <Link to="/client/notifications" className="block">
+                <StatCard
+                  title="Notifications"
+                  value={stats?.notificationsNonLues || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="🔔"
+                />
+              </Link>
+
+              <Link to="/client/historique" className="block">
+                <StatCard
+                  title="Actions récentes"
+                  value={stats?.actionsRecentes || 0}
+                  change={0}
+                  trend="neutral"
+                  icon="📊"
+                />
+              </Link>
+            </div>
+
+            {/* GRAPHIQUE */}
+            {stats?.chart_data && (
+              <div className="mb-8">
+                <RevenueChart data={stats.chart_data} />
+              </div>
+            )}
+
+            {/* CONTENU PRINCIPAL - 2 COLONNES */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* COLONNE GAUCHE - ACTIVITÉ RÉCENTE */}
+              <div className="lg:col-span-2">
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      Activité récente
+                    </h2>
+                    <Link
+                      to="/client/historique"
+                      className="text-sm text-teal-600 hover:text-teal-700 font-medium"
+                    >
+                      Voir tout →
+                    </Link>
+                  </div>
+
+                  {recentActivity.length > 0 ? (
+                    <div className="space-y-4">
+                      {recentActivity.map((action) => {
+                        const { icon: Icon, color } = getActionIcon(action.type_action);
+                        return (
+                          <div
+                            key={action.id}
+                            className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0 last:pb-0"
+                          >
+                            <div className={`p-2 rounded-lg bg-gray-50 ${color}`}>
+                              <Icon className="w-4 h-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900">
+                                {action.description || action.type_action}
+                              </p>
+                              {action.vehicule && (
+                                <Link
+                                  to={`/vehicules/${action.vehicule.id}`}
+                                  className="text-sm text-teal-600 hover:text-teal-700 mt-1 inline-block"
+                                >
+                                  {action.vehicule.nom_complet}
+                                </Link>
+                              )}
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatRelativeTime(action.date_action)}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <FiClock className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <p className="text-gray-500">Aucune activité récente</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* COLONNE DROITE - RECOMMANDATIONS */}
+              <div>
+                <div className="bg-white rounded-lg shadow-md p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                    Pour vous
+                  </h2>
+
+                  {recommendations.length > 0 ? (
+                    <div className="space-y-3">
+                      {recommendations.map((rec, index) => (
+                        <Link
+                          key={index}
+                          to={rec.link}
+                          className="block p-3 rounded-lg bg-gradient-to-br from-teal-50 to-blue-50 hover:from-teal-100 hover:to-blue-100 transition"
+                        >
+                          <h3 className="font-medium text-gray-900 text-sm">
+                            {rec.title}
+                          </h3>
+                          <p className="text-xs text-gray-600 mt-1">
+                            {rec.description}
+                          </p>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-6">
+                      <FiStar className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">
+                        Parcourez des véhicules pour recevoir des recommandations
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ACTIONS RAPIDES - 6 CARTES */}
+
+          </>
+        )}
       </DashboardLayout>
     );
   }
 
-  // Vérifier si le concessionnaire a une concession validée
-  const hasValidConcession = concessions?.some(c => c.statut === 'VALIDE');
-
-  return (
-    <DashboardLayout title="Dashboard">
-      {/* Alert si aucune concession validée */}
-      {isConcessionnaire() && (
-        <ConcessionRequiredAlert concessions={concessions} />
-      )}
-
-      {/* Filtres de période + Sélecteur de concession */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center space-x-2">
-          <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">
-            Day
-          </button>
-          <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">
-            Week
-          </button>
-          <button className="px-4 py-2 text-sm font-medium bg-gray-900 text-white rounded-lg">
-            Month
-          </button>
-          <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition">
-            Year
-          </button>
+  // Dashboard CONCESSIONNAIRE (inchangé)
+  if (isConcessionnaire()) {
+    return (
+      <DashboardLayout title="Tableau de bord">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bienvenue, {user?.nom_entreprise || user?.prenom || 'Concessionnaire'} !
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Voici un aperçu de votre activité
+          </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          {/* Sélecteur de concession */}
-          {isConcessionnaire() && hasValidConcession && (
-            <ConcessionSelector
-              concessions={concessions}
-              selectedConcession={selectedConcession}
-              onSelect={setSelectedConcession}
-            />
-          )}
-
-          {/* Date */}
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <span className="font-medium">
-              1 Sep 2024 - 31 Sep 2024
-            </span>
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
           </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+            <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-red-800">Erreur</h3>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatCard
+                title="Total véhicules"
+                value={stats?.totalVehicules || 0}
+                change={0}
+                trend="neutral"
+                icon="🚗"
+              />
+              <StatCard
+                title="Disponibles"
+                value={stats?.vehiculesDisponibles || 0}
+                change={0}
+                trend="neutral"
+                icon="✅"
+              />
+              <StatCard
+                title="Locations actives"
+                value={stats?.locationsActives || 0}
+                change={0}
+                trend="neutral"
+                icon="📅"
+              />
+              <StatCard
+                title="Revenus"
+                value={`${Math.round(stats?.revenusTotal || 0).toLocaleString('fr-FR')} FCFA`}
+                change={0}
+                trend="neutral"
+                icon="💰"
+                featured={true}
+              />
+            </div>
+
+            {stats?.chart_data && (
+              <div className="mb-8">
+                <RevenueChart data={stats.chart_data} />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Link
+                to="/my-vehicules/add"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+              >
+                <FaCar className="w-8 h-8 text-teal-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Ajouter un véhicule
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Ajoutez un nouveau véhicule
+                </p>
+              </Link>
+
+              <Link
+                to="/my-vehicules"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+              >
+                <FiMapPin className="w-8 h-8 text-blue-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Mes véhicules
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Gérez votre flotte
+                </p>
+              </Link>
+
+              <Link
+                to="/my-concessions"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+              >
+                <FiUsers className="w-8 h-8 text-purple-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Mes concessions
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Gérez vos concessions
+                </p>
+              </Link>
+            </div>
+          </>
+        )}
+      </DashboardLayout>
+    );
+  }
+
+  // Dashboard ADMIN (inchangé)
+  if (isAdmin()) {
+    return (
+      <DashboardLayout title="Tableau de bord Admin">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">
+            Bienvenue, Administrateur !
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Vue d'ensemble de la plateforme
+          </p>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
+          </div>
+        ) : error ? (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start space-x-3">
+            <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-red-800">Erreur</h3>
+              <p className="text-red-700 text-sm mt-1">{error}</p>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <StatCard
+                title="Total utilisateurs"
+                value={stats?.utilisateurs?.total || 0}
+                change={0}
+                trend="neutral"
+                icon="👥"
+              />
+              <StatCard
+                title="Total véhicules"
+                value={stats?.vehicules?.total || 0}
+                change={0}
+                trend="neutral"
+                icon="🚗"
+              />
+              <StatCard
+                title="Locations actives"
+                value={stats?.locations?.en_cours || 0}
+                change={0}
+                trend="neutral"
+                icon="📅"
+              />
+              <StatCard
+                title="Revenus totaux"
+                value={`${Math.round(stats?.revenus?.total || 0).toLocaleString('fr-FR')} FCFA`}
+                change={0}
+                trend="neutral"
+                icon="💰"
+                featured={true}
+              />
+            </div>
+
+            {stats?.chart_data && (
+              <div className="mb-8">
+                <RevenueChart data={stats.chart_data} />
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Link
+                to="/admin/users"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+              >
+                <FiUsers className="w-8 h-8 text-teal-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Utilisateurs
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Gérer les utilisateurs
+                </p>
+              </Link>
+
+              <Link
+                to="/admin/concessions"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+              >
+                <FiMapPin className="w-8 h-8 text-blue-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Concessions
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Valider les concessions
+                </p>
+              </Link>
+
+              <Link
+                to="/admin/stats"
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
+              >
+                <FiTrendingUp className="w-8 h-8 text-purple-600 mb-3" />
+                <h3 className="font-semibold text-gray-900 mb-2">
+                  Statistiques
+                </h3>
+                <p className="text-sm text-gray-600">
+                  Voir les statistiques globales
+                </p>
+              </Link>
+            </div>
+          </>
+        )}
+      </DashboardLayout>
+    );
+  }
+
+  // Fallback
+  return (
+    <DashboardLayout title="Tableau de bord">
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <FiAlertCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Rôle non détecté
+          </h3>
+          <p className="text-gray-600">
+            Impossible de déterminer votre rôle utilisateur
+          </p>
         </div>
       </div>
-
-      {/* CONCESSIONNAIRE DASHBOARD */}
-      {isConcessionnaire() && data && (
-        <>
-          {/* Cartes statistiques - Grid 4 colonnes */}
-          {/* Cartes statistiques - Grid 4 colonnes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <StatCard
-              title="Revenus mensuels"
-              value="0 FCFA"
-              change={0}
-              trend="neutral"
-              icon="💰"
-              featured={true}
-            />
-            <StatCard
-              title="Total Véhicules"
-              value={vehicleStats.totalVehicules}
-              change={5}
-              trend="up"
-              icon="🚗"
-            />
-            <StatCard
-              title="Locations actives"
-              value={0}
-              change={0}
-              trend="neutral"
-              icon="📋"
-            />
-            <StatCard
-              title="Clients"
-              value={0}
-              change={0}
-              trend="neutral"
-              icon="👥"
-            />
-          </div>
-
-          {/* Section Widget Concessions + Véhicules récents */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Widget Mes Concessions */}
-            <MesConcessionsWidget
-              concessions={concessions}
-              loading={concessionsLoading}
-            />
-
-            {/* Véhicules récents */}
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <FiTruck className="text-teal-600 text-xl" />
-                  <h3 className="text-lg font-semibold text-gray-900">Véhicules récents</h3>
-                </div>
-                <Link
-                  to="/my-vehicules"
-                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
-                >
-                  Voir tout →
-                </Link>
-              </div>
-
-              {recentVehicles.length === 0 ? (
-                <div className="text-center py-8">
-                  <FiTruck className="text-gray-300 text-4xl mx-auto mb-3" />
-                  <p className="text-gray-500 text-sm mb-4">Aucun véhicule</p>
-                  {hasValidConcession ? (
-                    <Link
-                      to="/my-vehicules/add"
-                      className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
-                    >
-                      <FiPlus /> Ajouter un véhicule
-                    </Link>
-                  ) : (
-                    <p className="text-xs text-gray-500">
-                      Créez une concession validée pour ajouter des véhicules
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {recentVehicles.map((vehicule) => (
-                    <Link
-                      key={vehicule.id}
-                      to={`/my-vehicules/${vehicule.id}`}
-                      className="block border border-gray-200 rounded-lg p-3 hover:shadow-md transition"
-                    >
-                      <div className="flex items-center gap-3">
-                        {vehicule.images && vehicule.images[0] ? (
-                          <img
-                            src={vehicule.images[0].image}
-                            alt={vehicule.nom_modele}
-                            className="w-16 h-16 object-cover rounded"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 bg-gray-100 rounded flex items-center justify-center">
-                            <FiTruck className="text-gray-400 text-2xl" />
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-sm text-gray-900 truncate">
-                            {vehicule.marque} {vehicule.nom_modele}
-                          </h4>
-                          <p className="text-xs text-gray-500">
-                            {vehicule.annee} • {vehicule.carburant}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${vehicule.statut === 'DISPONIBLE' ? 'bg-green-100 text-green-700' :
-                              vehicule.statut === 'LOUE' ? 'bg-blue-100 text-blue-700' :
-                                'bg-orange-100 text-orange-700'
-                              }`}>
-                              {vehicule.statut}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          {vehicule.est_disponible_location && vehicule.prix_location_jour ? (
-                            <>
-                              <div className="text-lg font-bold text-teal-600">
-                                {parseInt(vehicule.prix_location_jour).toLocaleString('fr-FR')} FCFA
-                              </div>
-                              <div className="text-xs text-gray-500">par jour</div>
-                            </>
-                          ) : vehicule.est_disponible_vente && vehicule.prix_vente ? (
-                            <>
-                              <div className="text-lg font-bold text-teal-600">
-                                {parseInt(vehicule.prix_vente).toLocaleString('fr-FR')} FCFA
-                              </div>
-                              <div className="text-xs text-gray-500">prix de vente</div>
-                            </>
-                          ) : (
-                            <div className="text-sm text-gray-500">
-                              Prix non défini
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Graphique + Calendar/Gauge - Grid 2 colonnes */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            {/* Graphique (2/3) */}
-            <div className="lg:col-span-2">
-              <RevenueChart
-                data={data.revenueChart}
-                title="Revenus mensuels"
-              />
-            </div>
-
-            {/* Calendar + Gauge (1/3) */}
-            <div className="space-y-6">
-              <CalendarWidget events={data.upcomingEvents} />
-              <GaugeWidget
-                title="Croissance du parc"
-                value={75}
-                change={5}
-              />
-            </div>
-          </div>
-
-          {/* Tableau des locations récentes */}
-          <TransactionsTable
-            title="Locations récentes"
-            data={data.recentRentals}
-          />
-        </>
-      )}
-
-      {/* CLIENT DASHBOARD */}
-      {isClient() && data && (
-        <>
-          {/* Cartes statistiques - Grid 4 colonnes */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            <StatCard
-              title={data.stats.activeRentals.label}
-              value={data.stats.activeRentals.value}
-              change={data.stats.activeRentals.change}
-              trend={data.stats.activeRentals.trend}
-              icon="🚗"
-              featured={true}
-            />
-            <StatCard
-              title={data.stats.totalRentals.label}
-              value={data.stats.totalRentals.value}
-              change={data.stats.totalRentals.change}
-              trend={data.stats.totalRentals.trend}
-              icon="📋"
-            />
-            <StatCard
-              title={data.stats.totalSpent.label}
-              value={`${data.stats.totalSpent.value.toLocaleString('fr-FR')} FCFA`}
-              change={data.stats.totalSpent.change}
-              trend={data.stats.totalSpent.trend}
-              icon="💰"
-            />
-            <StatCard
-              title={data.stats.savedVehicles.label}
-              value={data.stats.savedVehicles.value}
-              change={data.stats.savedVehicles.change}
-              trend={data.stats.savedVehicles.trend}
-              icon="❤️"
-            />
-          </div>
-
-          {/* Graphique + Calendrier */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-            <div className="lg:col-span-2">
-              <RevenueChart
-                data={data.spendingChart}
-                title="Historique des dépenses"
-              />
-            </div>
-            <div>
-              <CalendarWidget events={data.upcomingRentals} />
-            </div>
-          </div>
-
-          {/* Mes réservations */}
-          <TransactionsTable
-            title="Mes réservations"
-            data={data.myBookings}
-          />
-        </>
-      )}
     </DashboardLayout>
   );
 }

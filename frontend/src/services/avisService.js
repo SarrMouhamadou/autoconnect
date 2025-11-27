@@ -71,11 +71,11 @@ const avisService = {
 
   /**
    * Récupérer mes avis (client connecté)
-   * GET /api/avis/mes-avis/
+   * GET /api/avis/mes_avis/
    */
   async getMesAvis(params = {}) {
     try {
-      const response = await api.get('/avis/mes-avis/', { params });
+      const response = await api.get('/avis/mes_avis/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

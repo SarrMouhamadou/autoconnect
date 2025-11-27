@@ -45,7 +45,7 @@ const locationService = {
    */
   async getMesLocations(params = {}) {
     try {
-      const response = await api.get('/locations/mes-locations/', { params });
+      const response = await api.get('/locations/mes_locations/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

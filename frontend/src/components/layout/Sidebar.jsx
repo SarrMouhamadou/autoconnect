@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   FiHome, FiTruck, FiFileText, FiBarChart2,
   FiUsers, FiMessageSquare, FiSettings,
-  FiHelpCircle, FiLogOut
+  FiHelpCircle, FiLogOut, FiSliders
 } from 'react-icons/fi';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
@@ -34,7 +34,7 @@ export default function Sidebar({ isOpen, onClose }) {
         { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
         { path: '/vehicules', icon: FiTruck, label: 'Catalogue', roles: ['all'] },
         { path: '/my-bookings', icon: FiFileText, label: 'Mes réservations', roles: ['CLIENT'] },
-        { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
+        { path: '/client/depenses', icon: FiMessageSquare, label: 'Dépenses', roles: ['all'] },
       ];
     }
 
@@ -58,10 +58,10 @@ export default function Sidebar({ isOpen, onClose }) {
   const menuItems = getMenuItems();
 
   const bottomMenuItems = [
-    { path: '/settings', icon: FiSettings, label: 'Paramètres' },
-    { path: '/help', icon: FiHelpCircle, label: 'Centre d\'aide' },
+    { path: '/client/profil', icon: FiSettings, label: 'Mon profil' },
+    { path: '/client/parametres', icon: FiSliders, label: 'Préférences' },
+    { path: '/client/aide', icon: FiHelpCircle, label: 'Centre d\'aide' },
   ];
-
   const isActive = (path) => location.pathname === path;
 
   const shouldShowItem = (item) => {
@@ -86,9 +86,8 @@ export default function Sidebar({ isOpen, onClose }) {
 
       {/* Sidebar - TEAL */}
       <aside
-        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-teal-700 to-teal-900 z-50 transition-transform duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        } w-60 shadow-2xl`}
+        className={`fixed top-0 left-0 h-full bg-gradient-to-b from-teal-700 to-teal-900 z-50 transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : '-translate-x-full'
+          } w-60 shadow-2xl`}
       >
         <div className="flex flex-col h-full">
           {/* Logo - ALIGNÉ AVEC LE HEADER */}
@@ -113,11 +112,10 @@ export default function Sidebar({ isOpen, onClose }) {
                   className="block relative"
                 >
                   <div
-                    className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${
-                      active
-                        ? 'bg-white/10 text-white font-medium'
-                        : 'text-teal-100 hover:bg-white/5 hover:text-white'
-                    } rounded-lg`}
+                    className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${active
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'text-teal-100 hover:bg-white/5 hover:text-white'
+                      } rounded-lg`}
                   >
                     <item.icon className={`text-lg ${active ? 'text-white' : 'text-teal-200'}`} />
                     <span>{item.label}</span>
@@ -142,11 +140,10 @@ export default function Sidebar({ isOpen, onClose }) {
                   key={item.path}
                   to={item.path}
                   onClick={onClose}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${
-                    active
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-teal-100 hover:bg-white/5 hover:text-white'
-                  }`}
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${active
+                    ? 'bg-white/10 text-white font-medium'
+                    : 'text-teal-100 hover:bg-white/5 hover:text-white'
+                    }`}
                 >
                   <item.icon className={`text-lg ${active ? 'text-white' : 'text-teal-200'}`} />
                   <span>{item.label}</span>
