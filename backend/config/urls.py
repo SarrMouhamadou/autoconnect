@@ -34,6 +34,9 @@ urlpatterns = [
 
     # APIs Promotions
     path('api/', include('promotions.urls')),
+
+    #  APIs Statistiques
+    path('api/statistiques/', include('statistiques.urls')),
 ]
 
 # Servir les fichiers media en développement
