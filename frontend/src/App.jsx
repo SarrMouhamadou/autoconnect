@@ -52,6 +52,15 @@ import ParametresPage from './pages/client/ParametresPage';
 import AidePage from './pages/client/AidePage';
 import ReservationPage from './pages/vehicules/ReservationPage';
 
+// Pages Concessionnaire
+import DemandesPageConcessionnaire from './pages/concessionnaire/DemandesPage';
+import AvisPageConcessionnaire from './pages/concessionnaire/AvisPage';
+import ClientsPage from './pages/concessionnaire/ClientsPage';
+import PromotionsPage from './pages/concessionnaire/PromotionsPage';
+import StatistiquesPage from './pages/concessionnaire/StatistiquesPage';
+import NotificationsPageConcessionnaire from './pages/concessionnaire/NotificationsPage';
+import ParametresPageConcessionnaire from './pages/concessionnaire/ParametresPage';
+
 function App() {
   return (
     <Router>
@@ -270,6 +279,64 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['CLIENT']}>
                   <AidePage />
+                </ProtectedRoute>
+              }
+            />
+
+            // Route Concessionnaire
+            <Route
+              path="/concessionnaire/demandes"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <DemandesPageConcessionnaire />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/concessionnaire/avis"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <AvisPageConcessionnaire />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/concessionnaire/clients"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <ClientsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/concessionnaire/promotions"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <PromotionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/concessionnaire/statistiques"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <StatistiquesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/concessionnaire/notifications"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <NotificationsPageConcessionnaire />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/concessionnaire/parametres"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <ParametresPageConcessionnaire />
                 </ProtectedRoute>
               }
             />

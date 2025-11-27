@@ -275,6 +275,17 @@ const promotionService = {
     return this.getMesPromotions({ statut: 'EXPIRE' });
   },
 
+
+  // Dans promotionService.js
+
+  /**
+   * Toggle activation d'une promotion
+   */
+  async togglePromotion(id, estActive) {
+    return estActive
+      ? this.activerPromotion(id)
+      : this.desactiverPromotion(id);
+  },
   // ========================================
   // GESTION DES ERREURS
   // ========================================

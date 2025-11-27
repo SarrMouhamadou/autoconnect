@@ -242,6 +242,33 @@ const demandeService = {
     return this.getDemandesRecues({ type_demande: type });
   },
 
+  // Dans demandeService.js
+
+  /**
+   * Marquer une demande comme lue
+   * PATCH /api/demands/{id}/marquer-lue/
+   */
+  async marquerCommeLue(id) {
+    try {
+      const response = await api.patch(`/demands/${id}/marquer-lue/`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Changer le statut d'une demande
+   * PATCH /api/demands/{id}/
+   */
+  async changerStatut(id, statut) {
+    try {
+      const response = await api.patch(`/demands/${id}/`, { statut });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
   // ========================================
   // GESTION DES ERREURS
   // ========================================
