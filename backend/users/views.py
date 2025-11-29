@@ -374,3 +374,196 @@ class ProfileProgressView(APIView):
         user = request.user
         serializer = ProfileProgressSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    # ========================================
+# API PARAMÈTRES UTILISATEUR
+# ========================================
+
+class ParametresView(APIView):
+    """
+    API pour gérer les préférences/paramètres utilisateur.
+    
+    GET /api/auth/parametres/
+    Récupère les préférences de l'utilisateur connecté
+    
+    PATCH /api/auth/parametres/
+    Met à jour les préférences de l'utilisateur connecté
+    
+    Permissions: Authentifié uniquement (IsAuthenticated)
+    
+    Headers:
+    Authorization: Bearer <access_token>
+    
+    Response (GET):
+    {
+        "notifications_demandes": true,
+        "notifications_reservations": true,
+        "notifications_avis": true,
+        "notifications_maintenance": false,
+        "notifications_promotions": true,
+        "email_nouvelles_demandes": true,
+        "email_confirmations": true,
+        "email_avis_clients": false,
+        "email_rappels": true,
+        "email_newsletter": false,
+        "profil_public": true,
+        "afficher_telephone": true,
+        "afficher_email": false,
+        "langue": "fr",
+        "theme": "light"
+    }
+    
+    Body (PATCH):
+    {
+        "notifications_demandes": false,
+        "langue": "en",
+        "theme": "dark"
+    }
+    
+    Response (PATCH):
+    {
+        "message": "Paramètres mis à jour avec succès",
+        "preferences": {...}
+    }
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Récupérer les préférences de l'utilisateur."""
+        user = request.user
+        
+        # Récupérer les préférences depuis le JSONField
+        preferences = user.preferences_notifications or {}
+        
+        # Valeurs par défaut si certaines clés sont manquantes
+        default_preferences = {
+            # Notifications
+            'notifications_demandes': True,
+            'notifications_reservations': True,
+            'notifications_avis': True,
+            'notifications_maintenance': False,
+            'notifications_promotions': True,
+            
+            # Email
+            'email_nouvelles_demandes': True,
+            'email_confirmations': True,
+            'email_avis_clients': False,
+            'email_rappels': True,
+            'email_newsletter': False,
+            
+            # Confidentialité
+            'profil_public': True,
+            'afficher_telephone': True,
+            'afficher_email': False,
+            
+            # Langue et affichage
+            'langue': 'fr',
+            'theme': 'light',
+        }
+        
+        # Fusionner les préférences existantes avec les valeurs par défaut
+        final_preferences = {**default_preferences, **preferences}
+        
+        return Response(final_preferences, status=status.HTTP_200_OK)
+    
+    def patch(self, request):
+        """Mettre à jour les préférences de l'utilisateur."""
+        user = request.user
+        
+        # Récupérer les préférences actuelles
+        current_preferences = user.preferences_notifications or {}
+        
+        # Mettre à jour avec les nouvelles valeurs
+        current_preferences.update(request.data)
+        
+        # Sauvegarder
+        user.preferences_notifications = current_preferences
+        user.save(update_fields=['preferences_notifications'])
+        
+        # Enregistrer dans l'historique
+        Historique.enregistrer_action(
+            utilisateur=request.user,
+            type_action='MAJ_PARAMETRES',
+            description="Mise à jour des paramètres",
+            request=request
+        )
+        
+        return Response({
+            'message': 'Paramètres mis à jour avec succès',
+            'preferences': current_preferences
+        }, status=status.HTTP_200_OK)
+    
+
+# ========================================
+# API LISTE DES CLIENTS (Concessionnaire)
+# ========================================
+
+class MesClientsView(APIView):
+    """
+    API pour récupérer la liste des clients du concessionnaire.
+    
+    GET /api/auth/mes-clients/
+    
+    Permissions: Concessionnaire uniquement
+    
+    Response:
+    [
+        {
+            "id": 1,
+            "email": "client@example.com",
+            "nom": "Diop",
+            "prenom": "Aminata",
+            "telephone": "+221771234567",
+            "date_inscription": "2024-01-15",
+            "nombre_locations": 5,
+            "montant_total_depense": 450000
+        }
+    ]
+    """
+    
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get(self, request):
+        """Récupérer tous les clients ayant loué des véhicules du concessionnaire."""
+        from django.db.models import Count, Sum
+        from locations.models import Location
+        
+        # Vérifier que l'utilisateur est un concessionnaire
+        if request.user.type_utilisateur != 'CONCESSIONNAIRE':
+            return Response(
+                {'error': 'Accès réservé aux concessionnaires'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Récupérer les IDs des clients qui ont loué nos véhicules
+        clients_ids = Location.objects.filter(
+            concessionnaire=request.user
+        ).values_list('client_id', flat=True).distinct()
+        
+        # Récupérer les clients avec leurs statistiques
+        clients = User.objects.filter(
+            id__in=clients_ids,
+            type_utilisateur='CLIENT'
+        ).annotate(
+            nombre_locations=Count('locations'),
+            montant_total_depense=Sum('locations__prix_total')
+        ).order_by('-nombre_locations')
+        
+        # Sérialiser les données
+        clients_data = []
+        for client in clients:
+            clients_data.append({
+                'id': client.id,
+                'email': client.email,
+                'nom': client.nom,
+                'prenom': client.prenom,
+                'nom_complet': client.nom_complet,
+                'telephone': client.telephone or '',
+                'photo_profil': request.build_absolute_uri(client.photo_profil.url) if client.photo_profil else None,
+                'date_inscription': client.date_inscription.strftime('%Y-%m-%d'),
+                'nombre_locations': client.nombre_locations or 0,
+                'montant_total_depense': float(client.montant_total_depense or 0),
+            })
+        
+        return Response(clients_data, status=status.HTTP_200_OK)
