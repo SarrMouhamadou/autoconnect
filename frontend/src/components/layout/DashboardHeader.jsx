@@ -3,14 +3,37 @@ import { FiMenu, FiSearch, FiBell } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardHeader({ onMenuClick, title = 'Dashboard' }) {
-    const { user } = useAuth();
+    const { user, isAdmin, isConcessionnaire, isClient } = useAuth();
     const [searchQuery, setSearchQuery] = useState('');
+
+    // ✅ Fonction pour déterminer le rôle à afficher
+    const getRoleDisplay = () => {
+        // Vérifier explicitement is_superuser et is_staff d'abord
+        if (user?.is_superuser === true || user?.is_staff === true) {
+            return 'Administrateur';
+        }
+
+        // Ensuite vérifier via les fonctions du contexte
+        if (isAdmin()) {
+            return 'Administrateur';
+        }
+
+        if (isConcessionnaire()) {
+            return 'Concessionnaire';
+        }
+
+        if (isClient()) {
+            return 'Client';
+        }
+
+        // Fallback sur type_utilisateur
+        return user?.type_utilisateur?.toLowerCase() || 'Utilisateur';
+    };
 
     return (
         <header className="bg-white border-b border-gray-200 sticky top-0 z-30 shadow-sm">
             <div className="px-4 sm:px-6 lg:px-8 py-4">
                 <div className="flex items-center justify-between">
-                    {/* Left: Menu + Title */}
                     {/* Left: Menu + Title */}
                     <div className="flex items-center space-x-4">
                         {/* Hamburger pour mobile */}
@@ -77,7 +100,8 @@ export default function DashboardHeader({ onMenuClick, title = 'Dashboard' }) {
                                     {user?.prenom} {user?.nom}
                                 </p>
                                 <p className="text-xs text-gray-500">
-                                    {user?.type_utilisateur === 'CLIENT' ? 'Client' : 'Concessionnaire'}
+                                    {/* ✅ CORRECTION ICI - Utiliser getRoleDisplay() */}
+                                    {getRoleDisplay()}
                                 </p>
                             </div>
                         </div>
