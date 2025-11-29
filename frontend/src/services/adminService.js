@@ -41,7 +41,12 @@ const adminService = {
    */
   async getUsersEnAttente() {
     try {
-      const response = await api.get('/auth/admin/users/en-attente/');
+      const response = await api.get('/auth/admin/users/', {
+        params: {
+          est_valide: false,
+          type_utilisateur: 'CONCESSIONNAIRE'
+        }
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -142,8 +147,8 @@ const adminService = {
    */
   async getAllConcessions(params = {}) {
     try {
-      const response = await api.get('/concessions/', { 
-        params: { ...params, admin: true } 
+      const response = await api.get('/concessions/', {
+        params: { ...params, admin: true }
       });
       return response.data;
     } catch (error) {
@@ -157,7 +162,11 @@ const adminService = {
    */
   async getConcessionsEnAttente() {
     try {
-      const response = await api.get('/concessions/en_attente/');
+      const response = await api.get('/concessions/', {
+        params: {
+          statut: 'EN_ATTENTE'
+        }
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -425,6 +434,179 @@ const adminService = {
     }
   },
 
+
+
+  // ========================================
+  // CONFIGURATION PLATEFORME (suite)
+  // ========================================
+
+  /**
+   * Créer une catégorie
+   */
+  async creerCategorie(data) {
+    try {
+      const response = await api.post('/vehicules/categories/', data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Supprimer une catégorie
+   */
+  async supprimerCategorie(id) {
+    try {
+      const response = await api.delete(`/vehicules/categories/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Créer une marque
+   */
+  async creerMarque(data) {
+    try {
+      const response = await api.post('/vehicules/marques/', data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Supprimer une marque
+   */
+  async supprimerMarque(id) {
+    try {
+      const response = await api.delete(`/vehicules/marques/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  // ========================================
+  // COMMUNICATION
+  // ========================================
+
+  /**
+   * Envoyer une newsletter
+   */
+  async envoyerNewsletter(data) {
+    try {
+      const response = await api.post('/communication/newsletter/', data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Publier une annonce
+   */
+  async publierAnnonce(data) {
+    try {
+      const response = await api.post('/communication/annonce/', data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  // ========================================
+  // RÔLES & PERMISSIONS
+  // ========================================
+
+  /**
+   * Récupérer toutes les permissions
+   */
+  async getAllPermissions() {
+    try {
+      const response = await api.get('/auth/permissions/');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Créer un rôle
+   */
+  async creerRole(data) {
+    try {
+      const response = await api.post('/auth/roles/', data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Modifier un rôle
+   */
+  async modifierRole(id, data) {
+    try {
+      const response = await api.patch(`/auth/roles/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Supprimer un rôle
+   */
+  async supprimerRole(id) {
+    try {
+      const response = await api.delete(`/auth/roles/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Récupérer tous les véhicules (admin)
+   */
+  async getAllVehicules(params = {}) {
+    try {
+      const response = await api.get('/vehicules/', {
+        params: { ...params, admin: true }
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Récupérer tous les avis (admin)
+   */
+  async getAllAvis(params = {}) {
+    try {
+      const response = await api.get('/avis/', {
+        params: { ...params, admin: true }
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Supprimer un avis
+   */
+  async supprimerAvis(id) {
+    try {
+      const response = await api.delete(`/avis/${id}/`);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
   // ========================================
   // GESTION DES ERREURS
   // ========================================

@@ -97,8 +97,8 @@ export default function Navbar() {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled
-          ? 'bg-gray-900 shadow-lg'
-          : 'bg-transparent'
+        ? 'bg-gray-900 shadow-lg'
+        : 'bg-transparent'
         }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -122,8 +122,8 @@ export default function Navbar() {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${isActive(item.path)
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                     }`}
                 >
                   <Icon className="text-lg" />
@@ -151,7 +151,11 @@ export default function Navbar() {
                       {user?.prenom} {user?.nom}
                     </p>
                     <p className="text-gray-400 text-xs capitalize">
-                      {user?.type_utilisateur?.toLowerCase()}
+                      {/* ✅ CORRECTION : Afficher le rôle réel */}
+                      {isAdmin() ? 'Administrateur' :
+                        isConcessionnaire() ? 'Concessionnaire' :
+                          isClient() ? 'Client' :
+                            user?.type_utilisateur?.toLowerCase()}
                     </p>
                   </div>
                   <FiChevronDown
@@ -227,8 +231,8 @@ export default function Navbar() {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${isActive(item.path)
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                     }`}
                 >
                   <Icon className="text-lg" />
@@ -254,7 +258,11 @@ export default function Navbar() {
                       {user?.prenom} {user?.nom}
                     </p>
                     <p className="text-gray-400 text-sm capitalize">
-                      {user?.type_utilisateur?.toLowerCase()}
+                      {/* ✅ CORRECTION : Afficher le rôle réel */}
+                      {isAdmin() ? 'Administrateur' :
+                        isConcessionnaire() ? 'Concessionnaire' :
+                          isClient() ? 'Client' :
+                            user?.type_utilisateur?.toLowerCase()}
                     </p>
                   </div>
                 </div>

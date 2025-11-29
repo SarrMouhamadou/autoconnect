@@ -5,6 +5,33 @@ import authService from '../services/authService';
 const AuthContext = createContext(null);
 
 /**
+ * Vérifier le type d'utilisateur
+ */
+const isClient = () => {
+  return user?.type_utilisateur === 'CLIENT';
+};
+
+const isConcessionnaire = () => {
+  // Si is_superuser ou is_staff est true, ce n'est PAS un concessionnaire
+  if (user?.is_superuser || user?.is_staff) {
+    return false;
+  }
+  return user?.type_utilisateur === 'CONCESSIONNAIRE';
+};
+
+const isAdmin = () => {
+  // Vérifier d'abord is_superuser et is_staff
+  if (user?.is_superuser === true || user?.is_staff === true) {
+    return true;
+  }
+
+  // Puis vérifier le type_utilisateur et niveau_acces
+  return (
+    user?.type_utilisateur === 'ADMINISTRATEUR' ||
+    user?.niveau_acces === 'SUPER'
+  );
+};
+/**
  * Provider du contexte d'authentification
  * Enveloppe l'application et fournit l'état d'authentification à tous les composants
  */
@@ -24,14 +51,14 @@ export const AuthProvider = ({ children }) => {
   const loadUser = async () => {
     try {
       setLoading(true);
-      
+
       // Vérifier si un token existe
       if (authService.isAuthenticated()) {
         const savedUser = authService.getUser();
-        
+
         if (savedUser) {
           setUser(savedUser);
-          
+
           // Optionnel : Récupérer le profil depuis l'API pour s'assurer qu'il est à jour
           try {
             const profile = await authService.getProfile();
@@ -59,10 +86,10 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       setLoading(true);
-      
+
       const data = await authService.register(userData);
       setUser(data.user);
-      
+
       return data;
     } catch (err) {
       setError(err.message);
@@ -79,10 +106,10 @@ export const AuthProvider = ({ children }) => {
     try {
       setError(null);
       setLoading(true);
-      
+
       const data = await authService.login(email, password);
       setUser(data.user);
-      
+
       return data;
     } catch (err) {
       setError(err.message);
@@ -129,19 +156,34 @@ export const AuthProvider = ({ children }) => {
   };
 
   const refreshUser = async () => {
-  try {
-    const userData = await authService.getProfile();
-    setUser(userData);
-  } catch (error) {
-    console.error('Erreur lors du rafraîchissement du profil:', error);
-  }
-};
+    try {
+      const userData = await authService.getProfile();
+      setUser(userData);
+    } catch (error) {
+      console.error('Erreur lors du rafraîchissement du profil:', error);
+    }
+  };
+
   /**
    * Vérifier le type d'utilisateur
+   * ✅ CORRIGÉ : Gestion de ADMINISTRATEUR et niveau_acces SUPER
    */
-  const isClient = () => user?.type_utilisateur === 'CLIENT';
-  const isConcessionnaire = () => user?.type_utilisateur === 'CONCESSIONNAIRE';
-  const isAdmin = () => user?.type_utilisateur === 'ADMINISTRATEUR';
+  const isClient = () => {
+    return user?.type_utilisateur === 'CLIENT';
+  };
+
+  const isConcessionnaire = () => {
+    return user?.type_utilisateur === 'CONCESSIONNAIRE' && !isAdmin();
+  };
+
+  const isAdmin = () => {
+    // ✅ Vérifie à la fois type_utilisateur ET niveau_acces
+    return (
+      user?.type_utilisateur === 'ADMINISTRATEUR' ||
+      user?.niveau_acces === 'SUPER' ||
+      user?.is_superuser === true
+    );
+  };
 
   // Valeurs exposées par le contexte
   const value = {
@@ -161,8 +203,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value=
-    {value}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
@@ -173,11 +214,11 @@ export const AuthProvider = ({ children }) => {
  */
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  
+
   if (!context) {
     throw new Error('useAuth doit être utilisé à l\'intérieur d\'un AuthProvider');
   }
-  
+
   return context;
 };
 

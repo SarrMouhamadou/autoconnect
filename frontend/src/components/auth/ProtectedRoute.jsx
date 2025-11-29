@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
  * <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
  */
 export default function ProtectedRoute({ children, allowedRoles = [] }) {
-  const { isAuthenticated, user, loading } = useAuth();
+  const { isAuthenticated, user, loading, isAdmin, isConcessionnaire, isClient } = useAuth();
   const location = useLocation();
 
   // Afficher un loader pendant la vérification
@@ -30,10 +30,26 @@ export default function ProtectedRoute({ children, allowedRoles = [] }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Si des rôles spécifiques sont requis, vérifier
+  // ✅ Si des rôles spécifiques sont requis, vérifier avec les fonctions
   if (allowedRoles.length > 0 && user) {
-    const hasRequiredRole = allowedRoles.includes(user.type_utilisateur);
-    
+    let hasRequiredRole = false;
+
+    // Vérifier chaque rôle requis
+    for (const role of allowedRoles) {
+      if (role === 'ADMIN' && isAdmin()) {
+        hasRequiredRole = true;
+        break;
+      }
+      if (role === 'CONCESSIONNAIRE' && isConcessionnaire()) {
+        hasRequiredRole = true;
+        break;
+      }
+      if (role === 'CLIENT' && isClient()) {
+        hasRequiredRole = true;
+        break;
+      }
+    }
+
     if (!hasRequiredRole) {
       // Rediriger vers une page "Non autorisé"
       return (

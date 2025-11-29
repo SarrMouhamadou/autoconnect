@@ -13,7 +13,7 @@ import {
   FiTag, FiPieChart, FiActivity
 } from 'react-icons/fi';
 
-import {FaCar} from 'react-icons/fa';
+import { FaCar } from 'react-icons/fa';
 import locationService from '../services/locationService';
 import vehiculeService from '../services/vehiculeService';
 import statistiqueService from '../services/statistiqueService';
@@ -21,6 +21,7 @@ import historiqueService from '../services/historiqueService';
 import notificationService from '../services/notificationService';
 import favoriService from '../services/favoriService';
 import demandeService from '../services/demandeService';
+import adminService from '../services/adminService'; // ✅ AJOUTÉ
 
 export default function DashboardPage() {
   const { user, isClient, isConcessionnaire, isAdmin } = useAuth();
@@ -33,12 +34,13 @@ export default function DashboardPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (isClient()) {
-      loadClientDashboard();
+     console.log('🔍 USER DATA:', user);
+    if (isAdmin()) {
+      loadAdminDashboard();
     } else if (isConcessionnaire()) {
       loadConcessionnaireDashboard();
-    } else if (isAdmin()) {
-      loadAdminDashboard();
+    } else if (isClient()) {
+      loadClientDashboard();
     }
   }, [user]);
 
@@ -275,11 +277,48 @@ export default function DashboardPage() {
   const loadAdminDashboard = async () => {
     try {
       setLoading(true);
+
+      // Charger les statistiques admin
       const statsData = await statistiqueService.getDashboardAdmin();
       setStats(statsData);
-    } catch (err) {
-      console.error('Erreur chargement dashboard admin:', err);
-      setError(err.message);
+
+      // Charger les éléments en attente
+      const [usersEnAttente, concessionsEnAttente] = await Promise.all([
+        adminService.getUsersEnAttente().catch(() => ({ results: [] })),
+        adminService.getConcessionsEnAttente().catch(() => ({ results: [] }))
+      ]);
+
+      // Créer des alertes
+      const newAlerts = [];
+
+      const usersArray = Array.isArray(usersEnAttente) ? usersEnAttente : (usersEnAttente.results || []);
+      const concessionsArray = Array.isArray(concessionsEnAttente) ? concessionsEnAttente : (concessionsEnAttente.results || []);
+
+      if (usersArray.length > 0) {
+        newAlerts.push({
+          type: 'warning',
+          icon: FiUsers,
+          title: `${usersArray.length} concessionnaire(s) en attente`,
+          message: `${usersArray.length} concessionnaire(s) en attente de validation`,
+          link: '/admin/utilisateurs'
+        });
+      }
+
+      if (concessionsArray.length > 0) {
+        newAlerts.push({
+          type: 'warning',
+          icon: FiMapPin,
+          title: `${concessionsArray.length} concession(s) en attente`,
+          message: `${concessionsArray.length} concession(s) en attente de validation`,
+          link: '/admin/concessions'
+        });
+      }
+
+      setAlerts(newAlerts);
+
+    } catch (error) {
+      console.error('Erreur chargement dashboard admin:', error);
+      setError('Erreur lors du chargement du dashboard');
     } finally {
       setLoading(false);
     }
@@ -314,7 +353,7 @@ export default function DashboardPage() {
   };
 
   // Dashboard CLIENT AMÉLIORÉ
-  if (isClient()) {
+  if (isClient() && !isAdmin() && !isConcessionnaire()) {
     return (
       <DashboardLayout title="Tableau de bord">
         <div className="mb-6">
@@ -348,38 +387,38 @@ export default function DashboardPage() {
                     key={index}
                     to={alert.link}
                     className={`block rounded-lg p-4 transition hover:shadow-md ${alert.type === 'warning'
-                        ? 'bg-yellow-50 border border-yellow-200'
-                        : alert.type === 'success'
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-blue-50 border border-blue-200'
+                      ? 'bg-yellow-50 border border-yellow-200'
+                      : alert.type === 'success'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-blue-50 border border-blue-200'
                       }`}
                   >
                     <div className="flex items-start space-x-3">
                       <alert.icon
                         className={`w-5 h-5 flex-shrink-0 mt-0.5 ${alert.type === 'warning'
-                            ? 'text-yellow-600'
-                            : alert.type === 'success'
-                              ? 'text-green-600'
-                              : 'text-blue-600'
+                          ? 'text-yellow-600'
+                          : alert.type === 'success'
+                            ? 'text-green-600'
+                            : 'text-blue-600'
                           }`}
                       />
                       <div className="flex-1">
                         <h3
                           className={`font-medium ${alert.type === 'warning'
-                              ? 'text-yellow-800'
-                              : alert.type === 'success'
-                                ? 'text-green-800'
-                                : 'text-blue-800'
+                            ? 'text-yellow-800'
+                            : alert.type === 'success'
+                              ? 'text-green-800'
+                              : 'text-blue-800'
                             }`}
                         >
                           {alert.title}
                         </h3>
                         <p
                           className={`text-sm mt-1 ${alert.type === 'warning'
-                              ? 'text-yellow-700'
-                              : alert.type === 'success'
-                                ? 'text-green-700'
-                                : 'text-blue-700'
+                            ? 'text-yellow-700'
+                            : alert.type === 'success'
+                              ? 'text-green-700'
+                              : 'text-blue-700'
                             }`}
                         >
                           {alert.message}
@@ -582,7 +621,7 @@ export default function DashboardPage() {
   }
 
   // Dashboard CONCESSIONNAIRE AMÉLIORÉ
-  if (isConcessionnaire()) {
+  if (isConcessionnaire() && !isAdmin()) {
     return (
       <DashboardLayout title="Tableau de bord">
         <div className="mb-6">
@@ -616,38 +655,38 @@ export default function DashboardPage() {
                     key={index}
                     to={alert.link}
                     className={`block rounded-lg p-4 transition hover:shadow-md ${alert.type === 'warning'
-                        ? 'bg-yellow-50 border border-yellow-200'
-                        : alert.type === 'success'
-                          ? 'bg-green-50 border border-green-200'
-                          : 'bg-blue-50 border border-blue-200'
+                      ? 'bg-yellow-50 border border-yellow-200'
+                      : alert.type === 'success'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-blue-50 border border-blue-200'
                       }`}
                   >
                     <div className="flex items-start space-x-3">
                       <alert.icon
                         className={`w-5 h-5 flex-shrink-0 mt-0.5 ${alert.type === 'warning'
-                            ? 'text-yellow-600'
-                            : alert.type === 'success'
-                              ? 'text-green-600'
-                              : 'text-blue-600'
+                          ? 'text-yellow-600'
+                          : alert.type === 'success'
+                            ? 'text-green-600'
+                            : 'text-blue-600'
                           }`}
                       />
                       <div className="flex-1">
                         <h3
                           className={`font-medium ${alert.type === 'warning'
-                              ? 'text-yellow-800'
-                              : alert.type === 'success'
-                                ? 'text-green-800'
-                                : 'text-blue-800'
+                            ? 'text-yellow-800'
+                            : alert.type === 'success'
+                              ? 'text-green-800'
+                              : 'text-blue-800'
                             }`}
                         >
                           {alert.title}
                         </h3>
                         <p
                           className={`text-sm mt-1 ${alert.type === 'warning'
-                              ? 'text-yellow-700'
-                              : alert.type === 'success'
-                                ? 'text-green-700'
-                                : 'text-blue-700'
+                            ? 'text-yellow-700'
+                            : alert.type === 'success'
+                              ? 'text-green-700'
+                              : 'text-blue-700'
                             }`}
                         >
                           {alert.message}
@@ -665,7 +704,7 @@ export default function DashboardPage() {
               <Link to="/concessionnaire/statistiques" className="block">
                 <StatCard
                   title="Revenus du mois"
-                  value={`${Math.round((stats?.revenusMois || 0) / 1000)} FCFA`}
+                  value={`${Math.round((stats?.revenusMois || 0) / 1000)}k FCFA`}
                   change={12}
                   trend="up"
                   icon="💰"
@@ -705,7 +744,7 @@ export default function DashboardPage() {
               <Link to="/concessionnaire/statistiques" className="block">
                 <StatCard
                   title="Taux d'occupation"
-                  value={`${stats?.tauxOccupation || 0}`}
+                  value={`${stats?.tauxOccupation || 0}%`}
                   change={-3}
                   trend="down"
                   icon="📊"
@@ -887,7 +926,9 @@ export default function DashboardPage() {
     );
   }
 
-  // Dashboard ADMIN
+  // ========================================
+  // Dashboard ADMIN - ✅ CORRIGÉ
+  // ========================================
   if (isAdmin()) {
     return (
       <DashboardLayout title="Tableau de bord Admin">
@@ -914,6 +955,28 @@ export default function DashboardPage() {
           </div>
         ) : (
           <>
+            {/* ALERTES ADMIN */}
+            {alerts.length > 0 && (
+              <div className="mb-6 space-y-3">
+                {alerts.map((alert, index) => (
+                  <Link
+                    key={index}
+                    to={alert.link}
+                    className="block bg-amber-50 border border-amber-200 rounded-lg p-4 hover:bg-amber-100 transition"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <alert.icon className="w-5 h-5 text-amber-600" />
+                        <span className="text-amber-900 font-medium">{alert.message}</span>
+                      </div>
+                      <FiChevronRight className="text-amber-600" />
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* KPIs ADMIN */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <StatCard
                 title="Total utilisateurs"
@@ -938,23 +1001,24 @@ export default function DashboardPage() {
               />
               <StatCard
                 title="Revenus totaux"
-                value={`${Math.round((stats?.revenus?.total || 0) / 1000)}k FCFA`}
+                value={`${Math.round((stats?.revenus?.total || 0) / 1000)}k FCFA%`}
                 change={0}
                 trend="neutral"
                 icon="💰"
-                featured={true}
               />
             </div>
 
+            {/* GRAPHIQUE */}
             {stats?.chart_data && (
               <div className="mb-8">
                 <RevenueChart data={stats.chart_data} />
               </div>
             )}
 
+            {/* RACCOURCIS ADMIN */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <Link
-                to="/admin/users"
+                to="/admin/utilisateurs"
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
               >
                 <FiUsers className="w-8 h-8 text-teal-600 mb-3" />
@@ -980,7 +1044,7 @@ export default function DashboardPage() {
               </Link>
 
               <Link
-                to="/admin/stats"
+                to="/admin/statistiques"
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition"
               >
                 <FiTrendingUp className="w-8 h-8 text-purple-600 mb-3" />

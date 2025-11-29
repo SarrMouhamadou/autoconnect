@@ -64,6 +64,18 @@ import ParametresPageConcessionnaire from './pages/concessionnaire/ParametresPag
 import AidePageConcessionnaire from './pages/concessionnaire/AidePage';
 import LocationsPage from './pages/concessionnaire/LocationsPage';
 
+import {
+  UtilisateursPage,
+  UtilisateurDetailPage,
+  ConcessionsAdminPage,
+  ModerationAvisPage,
+  ModerationVehiculesPage,
+  ConfigurationPage,
+  StatistiquesAdminPage,
+  CommunicationPage,
+  RolesPage
+} from './pages/admin';
+
 function App() {
   return (
     <Router>
@@ -369,6 +381,93 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
                   <LocationsPage />
+                </ProtectedRoute>
+              }
+            />
+
+
+            {/* ================================ */}
+            {/* ROUTE 404 - PAGE NON TROUVÉE */}
+            {/* ================================ */}
+
+
+            <Route
+              path="/admin/utilisateurs"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <UtilisateursPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/utilisateurs/:id"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <UtilisateurDetailPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/concessions"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ConcessionsAdminPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/avis"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ModerationAvisPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/vehicules"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ModerationVehiculesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/configuration"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <ConfigurationPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/statistiques"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <StatistiquesAdminPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/communication"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <CommunicationPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/admin/roles"
+              element={
+                <ProtectedRoute allowedRoles={['ADMIN']}>
+                  <RolesPage />
                 </ProtectedRoute>
               }
             />

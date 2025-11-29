@@ -268,6 +268,23 @@ const statistiqueService = {
     }
   },
 
+  /**
+ * Exporter les statistiques
+ */
+  /**
+ * Exporter les statistiques
+ */
+  async exportStatistiques(params) {
+    try {
+      const response = await api.get('/statistiques/export/', {
+        params,
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
   // ========================================
   // GESTION DES ERREURS
   // ========================================
