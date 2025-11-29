@@ -97,7 +97,7 @@ const authService = {
       throw this.handleError(error);
     }
   },
-  
+
   /**
    * Mettre à jour le profil
    * @param {Object} userData - Données à mettre à jour
@@ -121,6 +121,7 @@ const authService = {
       throw this.handleError(error);
     }
   },
+
   /**
    * Changer le mot de passe
    */
@@ -136,6 +137,43 @@ const authService = {
       throw this.handleError(error);
     }
   },
+
+  // ========================================
+  // PARAMÈTRES / PRÉFÉRENCES ✅ NOUVEAU
+  // ========================================
+
+  /**
+   * Récupérer les paramètres/préférences de l'utilisateur
+   * GET /api/auth/parametres/
+   * @returns {Promise} Préférences de l'utilisateur
+   */
+  async getParametres() {
+    try {
+      const response = await api.get('/auth/parametres/');
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  /**
+   * Mettre à jour les paramètres/préférences
+   * PATCH /api/auth/parametres/
+   * @param {Object} preferences - Préférences à mettre à jour
+   * @returns {Promise} Réponse de l'API
+   */
+  async updateParametres(preferences) {
+    try {
+      const response = await api.patch('/auth/parametres/', preferences);
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  },
+
+  // ========================================
+  // TOKENS JWT
+  // ========================================
 
   /**
    * Rafraîchir le token d'accès

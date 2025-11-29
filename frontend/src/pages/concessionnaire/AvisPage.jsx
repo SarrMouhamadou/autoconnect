@@ -26,13 +26,17 @@ export default function AvisPage() {
             setLoading(true);
             const data = await avisService.getAvisRecus();
 
-            const avisArray = Array.isArray(data)
-                ? data
-                : (data.results || []);
-
-            setAvis(avisArray);
+            // ✅ GESTION PAGINATION (comme LocationsPage)
+            if (data && data.results) {
+                setAvis(data.results);  // Réponse paginée
+            } else if (Array.isArray(data)) {
+                setAvis(data);  // Réponse directe
+            } else {
+                setAvis([]);
+            }
         } catch (err) {
             setError(err.message);
+            setAvis([]);  // Important pour éviter l'erreur filter
         } finally {
             setLoading(false);
         }
@@ -121,8 +125,8 @@ export default function AvisPage() {
                     <FiStar
                         key={star}
                         className={`w-5 h-5 ${star <= note
-                                ? 'text-yellow-400 fill-current'
-                                : 'text-gray-300'
+                            ? 'text-yellow-400 fill-current'
+                            : 'text-gray-300'
                             }`}
                     />
                 ))}

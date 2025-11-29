@@ -109,11 +109,11 @@ const promotionService = {
 
   /**
    * Récupérer mes promotions (concessionnaire)
-   * GET /api/promotions/mes-promotions/
+   * GET /api/promotions/mes_promotions/
    */
   async getMesPromotions(params = {}) {
     try {
-      const response = await api.get('/promotions/mes-promotions/', { params });
+      const response = await api.get('/promotions/mes_promotions/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

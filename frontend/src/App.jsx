@@ -15,9 +15,6 @@ import RegisterPage from './pages/auth/RegisterPage';
 
 // Pages protégées
 import DashboardPage from './pages/DashboardPage';
-import ProfilePage from './pages/profile/ProfilePage';
-import EditProfilePage from './pages/profile/EditProfilePage';
-import ChangePasswordPage from './pages/profile/ChangePasswordPage';
 import SettingsPage from './pages/SettingsPage';
 
 // Pages Véhicules (Concessionnaire)
@@ -36,6 +33,7 @@ import EditConcessionPage from './pages/concessions/EditConcessionPage';
 import ConcessionDetailPage from './pages/concessions/ConcessionDetailPage';
 import ConcessionsPage from './pages/concessions/ConcessionsPage';
 
+
 // Page Comparateur
 import ComparePage from './pages/compare/ComparePage';
 
@@ -53,6 +51,9 @@ import AidePage from './pages/client/AidePage';
 import ReservationPage from './pages/vehicules/ReservationPage';
 
 // Pages Concessionnaire
+import ProfilPage from './pages/concessionnaire/ProfilPage';
+import EditProfilPage from './pages/concessionnaire/EditProfilPage'
+import ChangePasswordPage from './pages/concessionnaire/ChangePasswordPage';
 import DemandesPageConcessionnaire from './pages/concessionnaire/DemandesPage';
 import AvisPageConcessionnaire from './pages/concessionnaire/AvisPage';
 import ClientsPage from './pages/concessionnaire/ClientsPage';
@@ -60,6 +61,8 @@ import PromotionsPage from './pages/concessionnaire/PromotionsPage';
 import StatistiquesPage from './pages/concessionnaire/StatistiquesPage';
 import NotificationsPageConcessionnaire from './pages/concessionnaire/NotificationsPage';
 import ParametresPageConcessionnaire from './pages/concessionnaire/ParametresPage';
+import AidePageConcessionnaire from './pages/concessionnaire/AidePage';
+import LocationsPage from './pages/concessionnaire/LocationsPage';
 
 function App() {
   return (
@@ -93,7 +96,8 @@ function App() {
             {/* Dashboard */}
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
 
-            {/* Profil */}
+            {/* Profil
+
             <Route
               path="/profile"
               element={
@@ -120,6 +124,13 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+             */}
+
+
+
+
+
 
             {/* Settings */}
             <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
@@ -283,7 +294,10 @@ function App() {
               }
             />
 
-            // Route Concessionnaire
+            {/* ROUTES CONCESSIONNAIRE - Protégées */}
+            <Route path="/concessionnaire/profil" element={<ProfilPage />} />
+            <Route path="/concessionnaire/profil/edit" element={<EditProfilPage />} />
+            <Route path="/concessionnaire/profil/change-password" element={<ChangePasswordPage />} />
             <Route
               path="/concessionnaire/demandes"
               element={
@@ -337,6 +351,24 @@ function App() {
               element={
                 <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
                   <ParametresPageConcessionnaire />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/concessionnaire/aide"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <AidePageConcessionnaire />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/concessionnaire/locations"
+              element={
+                <ProtectedRoute allowedRoles={['CONCESSIONNAIRE']}>
+                  <LocationsPage />
                 </ProtectedRoute>
               }
             />

@@ -139,11 +139,11 @@ const demandeService = {
 
   /**
    * Récupérer les demandes reçues (concessionnaire)
-   * GET /api/demands/demandes-recues/
+   * GET /api/demands/demandes_recues/
    */
   async getDemandesRecues(params = {}) {
     try {
-      const response = await api.get('/demands/demandes-recues/', { params });
+      const response = await api.get('/demands/demandes_recues/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);

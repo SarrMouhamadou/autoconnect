@@ -3,460 +3,353 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import { useAuth } from '../../context/AuthContext';
 import authService from '../../services/authService';
 import {
-    FiBell, FiMail, FiClock, FiDollarSign,
-    FiCheck, FiAlertCircle, FiGlobe, FiSettings
+    FiBell, FiMail, FiMessageSquare,
+    FiShield, FiEye, FiGlobe, FiSave
 } from 'react-icons/fi';
 
 export default function ParametresPage() {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState(null);
 
-    // Paramètres notifications
-    const [notifications, setNotifications] = useState({
-        nouvelles_demandes: true,
-        nouvelles_locations: true,
-        nouveaux_avis: true,
-        alertes_maintenance: true,
-        rappels: true,
-        newsletter: false,
-    });
+    // États pour les paramètres
+    const [preferences, setPreferences] = useState({
+        // Notifications
+        notifications_demandes: true,
+        notifications_reservations: true,
+        notifications_avis: true,
+        notifications_maintenance: false,
+        notifications_promotions: true,
 
-    // Paramètres généraux
-    const [parametresGeneraux, setParametresGeneraux] = useState({
+        // Email
+        email_nouvelles_demandes: true,
+        email_confirmations: true,
+        email_avis_clients: false,
+        email_rappels: true,
+        email_newsletter: false,
+
+        // Confidentialité
+        profil_public: true,
+        afficher_telephone: true,
+        afficher_email: false,
+
+        // Langue et affichage
         langue: 'fr',
-        fuseau_horaire: 'Africa/Dakar',
-        devise: 'FCFA',
-        format_date: 'DD/MM/YYYY',
+        theme: 'light',
     });
 
-    // Paramètres métier
-    const [parametresMetier, setParametresMetier] = useState({
-        auto_confirmation_locations: false,
-        delai_reponse_demandes: '24', // heures
-        activation_auto_promotions: true,
-        affichage_prix_ttc: true,
-    });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+    const [saveError, setSaveError] = useState(null);
 
+    // Charger les paramètres depuis le backend
     useEffect(() => {
         loadParametres();
     }, []);
 
     const loadParametres = async () => {
         try {
+            setLoading(true);
             const data = await authService.getParametres();
-            if (data.notifications) setNotifications(data.notifications);
-            if (data.generaux) setParametresGeneraux(data.generaux);
-            if (data.metier) setParametresMetier(data.metier);
-        } catch (err) {
-            console.error('Erreur chargement paramètres:', err);
-        }
-    };
-
-    const handleSaveNotifications = async () => {
-        try {
-            setLoading(true);
-            await authService.updateParametres({ notifications });
-            setMessage({ type: 'success', text: 'Préférences de notifications enregistrées' });
-        } catch (err) {
-            setMessage({ type: 'error', text: err.message });
+            setPreferences(data);
+        } catch (error) {
+            console.error('Erreur lors du chargement des paramètres:', error);
+            // En cas d'erreur, garder les valeurs par défaut
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSaveGeneraux = async () => {
+    // Gérer les changements de paramètres
+    const handleToggle = (key) => {
+        setPreferences(prev => ({
+            ...prev,
+            [key]: !prev[key]
+        }));
+    };
+
+    const handleSelectChange = (key, value) => {
+        setPreferences(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    // Sauvegarder les paramètres dans le backend
+    const handleSave = async () => {
         try {
-            setLoading(true);
-            await authService.updateParametres({ generaux: parametresGeneraux });
-            setMessage({ type: 'success', text: 'Paramètres généraux enregistrés' });
-        } catch (err) {
-            setMessage({ type: 'error', text: err.message });
+            setSaving(true);
+            setSaveError(null);
+            setSaveSuccess(false);
+
+            await authService.updateParametres(preferences);
+
+            setSaveSuccess(true);
+
+            // Masquer le message après 3 secondes
+            setTimeout(() => {
+                setSaveSuccess(false);
+            }, 3000);
+
+        } catch (error) {
+            console.error('Erreur lors de la sauvegarde:', error);
+            setSaveError(error.message || 'Erreur lors de la sauvegarde des paramètres');
         } finally {
-            setLoading(false);
+            setSaving(false);
         }
     };
 
-    const handleSaveMetier = async () => {
-        try {
-            setLoading(true);
-            await authService.updateParametres({ metier: parametresMetier });
-            setMessage({ type: 'success', text: 'Paramètres métier enregistrés' });
-        } catch (err) {
-            setMessage({ type: 'error', text: err.message });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const NotificationToggle = ({ label, name, checked, onChange }) => (
-        <div className="flex items-center justify-between py-3">
-            <span className="text-sm text-gray-700">{label}</span>
-            <button
-                onClick={() => onChange(name, !checked)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${checked ? 'bg-teal-600' : 'bg-gray-300'
-                    }`}
-            >
-                <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'
-                        }`}
-                />
-            </button>
-        </div>
-    );
+    // Afficher un loader pendant le chargement initial
+    if (loading) {
+        return (
+            <DashboardLayout title="Paramètres">
+                <div className="flex items-center justify-center h-64">
+                    <div className="text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mx-auto mb-4"></div>
+                        <p className="text-gray-600">Chargement des paramètres...</p>
+                    </div>
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout title="Paramètres">
-            {/* En-tête */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold text-gray-900">Paramètres</h1>
-                <p className="text-gray-600 mt-1">
-                    Gérez vos préférences et paramètres de votre compte concessionnaire
-                </p>
-            </div>
+            <div className="max-w-4xl mx-auto">
 
-            {/* Message de confirmation */}
-            {message && (
-                <div
-                    className={`mb-6 p-4 rounded-lg flex items-start space-x-3 ${message.type === 'success'
-                            ? 'bg-green-50 border border-green-200'
-                            : 'bg-red-50 border border-red-200'
-                        }`}
-                >
-                    {message.type === 'success' ? (
-                        <FiCheck className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-                    ) : (
-                        <FiAlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                    )}
-                    <p className={message.type === 'success' ? 'text-green-800' : 'text-red-800'}>
-                        {message.text}
-                    </p>
-                </div>
-            )}
+                {/* Messages de succès/erreur */}
+                {saveSuccess && (
+                    <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg flex items-center">
+                        <FiSave className="w-5 h-5 mr-3 flex-shrink-0" />
+                        <span>Paramètres sauvegardés avec succès !</span>
+                    </div>
+                )}
 
-            <div className="space-y-6">
-                {/* Notifications */}
-                <div className="bg-white rounded-lg shadow-md">
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
-                            <FiBell className="w-5 h-5 text-gray-600" />
+                {saveError && (
+                    <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+                        {saveError}
+                    </div>
+                )}
+
+                {/* Section Notifications */}
+                <div className="bg-white rounded-lg shadow-md mb-6">
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center">
+                            <FiBell className="w-5 h-5 text-teal-600 mr-3" />
                             <h2 className="text-lg font-semibold text-gray-900">
                                 Notifications
                             </h2>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">
-                            Choisissez les types de notifications que vous souhaitez recevoir
+                            Gérez les notifications que vous souhaitez recevoir
                         </p>
                     </div>
-                    <div className="p-6">
-                        <div className="space-y-1 divide-y divide-gray-200">
-                            <NotificationToggle
-                                label="Nouvelles demandes de contact"
-                                name="nouvelles_demandes"
-                                checked={notifications.nouvelles_demandes}
-                                onChange={(name, value) =>
-                                    setNotifications({ ...notifications, [name]: value })
-                                }
-                            />
-                            <NotificationToggle
-                                label="Nouvelles réservations"
-                                name="nouvelles_locations"
-                                checked={notifications.nouvelles_locations}
-                                onChange={(name, value) =>
-                                    setNotifications({ ...notifications, [name]: value })
-                                }
-                            />
-                            <NotificationToggle
-                                label="Nouveaux avis clients"
-                                name="nouveaux_avis"
-                                checked={notifications.nouveaux_avis}
-                                onChange={(name, value) =>
-                                    setNotifications({ ...notifications, [name]: value })
-                                }
-                            />
-                            <NotificationToggle
-                                label="Alertes de maintenance véhicules"
-                                name="alertes_maintenance"
-                                checked={notifications.alertes_maintenance}
-                                onChange={(name, value) =>
-                                    setNotifications({ ...notifications, [name]: value })
-                                }
-                            />
-                            <NotificationToggle
-                                label="Rappels et échéances"
-                                name="rappels"
-                                checked={notifications.rappels}
-                                onChange={(name, value) =>
-                                    setNotifications({ ...notifications, [name]: value })
-                                }
-                            />
-                            <NotificationToggle
-                                label="Newsletter AutoConnect"
-                                name="newsletter"
-                                checked={notifications.newsletter}
-                                onChange={(name, value) =>
-                                    setNotifications({ ...notifications, [name]: value })
-                                }
-                            />
+
+                    <div className="p-6 space-y-4">
+                        <ToggleItem
+                            label="Nouvelles demandes"
+                            description="Recevoir une notification pour chaque nouvelle demande"
+                            checked={preferences.notifications_demandes}
+                            onChange={() => handleToggle('notifications_demandes')}
+                        />
+                        <ToggleItem
+                            label="Réservations"
+                            description="Être notifié des nouvelles réservations"
+                            checked={preferences.notifications_reservations}
+                            onChange={() => handleToggle('notifications_reservations')}
+                        />
+                        <ToggleItem
+                            label="Nouveaux avis"
+                            description="Notification quand un client laisse un avis"
+                            checked={preferences.notifications_avis}
+                            onChange={() => handleToggle('notifications_avis')}
+                        />
+                        <ToggleItem
+                            label="Alertes maintenance"
+                            description="Rappels pour l'entretien des véhicules"
+                            checked={preferences.notifications_maintenance}
+                            onChange={() => handleToggle('notifications_maintenance')}
+                        />
+                        <ToggleItem
+                            label="Promotions et conseils"
+                            description="Conseils pour optimiser votre activité"
+                            checked={preferences.notifications_promotions}
+                            onChange={() => handleToggle('notifications_promotions')}
+                        />
+                    </div>
+                </div>
+
+                {/* Section Email */}
+                <div className="bg-white rounded-lg shadow-md mb-6">
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center">
+                            <FiMail className="w-5 h-5 text-teal-600 mr-3" />
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                Notifications par email
+                            </h2>
                         </div>
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={handleSaveNotifications}
-                                disabled={loading}
-                                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+                        <p className="text-sm text-gray-600 mt-1">
+                            Choisissez les emails que vous souhaitez recevoir
+                        </p>
+                    </div>
+
+                    <div className="p-6 space-y-4">
+                        <ToggleItem
+                            label="Nouvelles demandes"
+                            description={`Envoyer à ${user?.email || 'votre email'}`}
+                            checked={preferences.email_nouvelles_demandes}
+                            onChange={() => handleToggle('email_nouvelles_demandes')}
+                        />
+                        <ToggleItem
+                            label="Confirmations de réservation"
+                            description="Recevoir un email pour chaque réservation confirmée"
+                            checked={preferences.email_confirmations}
+                            onChange={() => handleToggle('email_confirmations')}
+                        />
+                        <ToggleItem
+                            label="Avis clients"
+                            description="Email quand un client dépose un avis"
+                            checked={preferences.email_avis_clients}
+                            onChange={() => handleToggle('email_avis_clients')}
+                        />
+                        <ToggleItem
+                            label="Rappels et alertes"
+                            description="Rappels pour les tâches importantes"
+                            checked={preferences.email_rappels}
+                            onChange={() => handleToggle('email_rappels')}
+                        />
+                        <ToggleItem
+                            label="Newsletter AutoConnect"
+                            description="Actualités, conseils et nouveautés"
+                            checked={preferences.email_newsletter}
+                            onChange={() => handleToggle('email_newsletter')}
+                        />
+                    </div>
+                </div>
+
+                {/* Section Confidentialité */}
+                <div className="bg-white rounded-lg shadow-md mb-6">
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center">
+                            <FiShield className="w-5 h-5 text-teal-600 mr-3" />
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                Confidentialité
+                            </h2>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Contrôlez la visibilité de vos informations
+                        </p>
+                    </div>
+
+                    <div className="p-6 space-y-4">
+                        <ToggleItem
+                            label="Profil public"
+                            description="Permettre aux visiteurs de voir votre profil"
+                            checked={preferences.profil_public}
+                            onChange={() => handleToggle('profil_public')}
+                        />
+                        <ToggleItem
+                            label="Afficher le téléphone"
+                            description="Rendre votre numéro visible sur votre page"
+                            checked={preferences.afficher_telephone}
+                            onChange={() => handleToggle('afficher_telephone')}
+                        />
+                        <ToggleItem
+                            label="Afficher l'email"
+                            description="Rendre votre email visible publiquement"
+                            checked={preferences.afficher_email}
+                            onChange={() => handleToggle('afficher_email')}
+                        />
+                    </div>
+                </div>
+
+                {/* Section Langue et Affichage */}
+                <div className="bg-white rounded-lg shadow-md mb-6">
+                    <div className="border-b border-gray-200 px-6 py-4">
+                        <div className="flex items-center">
+                            <FiGlobe className="w-5 h-5 text-teal-600 mr-3" />
+                            <h2 className="text-lg font-semibold text-gray-900">
+                                Langue et affichage
+                            </h2>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-1">
+                            Personnalisez l'apparence de l'interface
+                        </p>
+                    </div>
+
+                    <div className="p-6 space-y-6">
+                        {/* Langue */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Langue
+                            </label>
+                            <select
+                                value={preferences.langue}
+                                onChange={(e) => handleSelectChange('langue', e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
                             >
-                                Enregistrer
-                            </button>
+                                <option value="fr">Français</option>
+                                <option value="en">English</option>
+                                <option value="ar">العربية</option>
+                                <option value="wo">Wolof</option>
+                            </select>
+                        </div>
+
+                        {/* Thème */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Thème
+                            </label>
+                            <select
+                                value={preferences.theme}
+                                onChange={(e) => handleSelectChange('theme', e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            >
+                                <option value="light">Clair</option>
+                                <option value="dark">Sombre</option>
+                                <option value="auto">Automatique (système)</option>
+                            </select>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Le thème sombre sera disponible prochainement
+                            </p>
                         </div>
                     </div>
                 </div>
 
-                {/* Paramètres généraux */}
-                <div className="bg-white rounded-lg shadow-md">
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
-                            <FiGlobe className="w-5 h-5 text-gray-600" />
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                Paramètres généraux
-                            </h2>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                            Langue, fuseau horaire et préférences d'affichage
-                        </p>
-                    </div>
-                    <div className="p-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Langue
-                                </label>
-                                <select
-                                    value={parametresGeneraux.langue}
-                                    onChange={(e) =>
-                                        setParametresGeneraux({
-                                            ...parametresGeneraux,
-                                            langue: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                >
-                                    <option value="fr">Français</option>
-                                    <option value="en">English</option>
-                                    <option value="wo">Wolof</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fuseau horaire
-                                </label>
-                                <select
-                                    value={parametresGeneraux.fuseau_horaire}
-                                    onChange={(e) =>
-                                        setParametresGeneraux({
-                                            ...parametresGeneraux,
-                                            fuseau_horaire: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                >
-                                    <option value="Africa/Dakar">Dakar (GMT)</option>
-                                    <option value="Africa/Abidjan">Abidjan (GMT)</option>
-                                    <option value="Europe/Paris">Paris (GMT+1)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Devise
-                                </label>
-                                <select
-                                    value={parametresGeneraux.devise}
-                                    onChange={(e) =>
-                                        setParametresGeneraux({
-                                            ...parametresGeneraux,
-                                            devise: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                >
-                                    <option value="FCFA">FCFA</option>
-                                    <option value="EUR">Euro (€)</option>
-                                    <option value="USD">Dollar ($)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Format de date
-                                </label>
-                                <select
-                                    value={parametresGeneraux.format_date}
-                                    onChange={(e) =>
-                                        setParametresGeneraux({
-                                            ...parametresGeneraux,
-                                            format_date: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                >
-                                    <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={handleSaveGeneraux}
-                                disabled={loading}
-                                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
-                            >
-                                Enregistrer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Paramètres métier */}
-                <div className="bg-white rounded-lg shadow-md">
-                    <div className="p-6 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
-                            <FiSettings className="w-5 h-5 text-gray-600" />
-                            <h2 className="text-lg font-semibold text-gray-900">
-                                Paramètres métier
-                            </h2>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">
-                            Configuration spécifique à votre activité de location
-                        </p>
-                    </div>
-                    <div className="p-6">
-                        <div className="space-y-6">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">
-                                        Confirmation automatique des locations
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        Les réservations sont confirmées automatiquement sans validation manuelle
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() =>
-                                        setParametresMetier({
-                                            ...parametresMetier,
-                                            auto_confirmation_locations:
-                                                !parametresMetier.auto_confirmation_locations,
-                                        })
-                                    }
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${parametresMetier.auto_confirmation_locations
-                                            ? 'bg-teal-600'
-                                            : 'bg-gray-300'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${parametresMetier.auto_confirmation_locations
-                                                ? 'translate-x-6'
-                                                : 'translate-x-1'
-                                            }`}
-                                    />
-                                </button>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Délai de réponse aux demandes (heures)
-                                </label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="72"
-                                    value={parametresMetier.delai_reponse_demandes}
-                                    onChange={(e) =>
-                                        setParametresMetier({
-                                            ...parametresMetier,
-                                            delai_reponse_demandes: e.target.value,
-                                        })
-                                    }
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                                />
-                                <p className="text-xs text-gray-500 mt-1">
-                                    Temps maximum pour répondre aux demandes clients avant alerte
-                                </p>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">
-                                        Activation automatique des promotions
-                                    </p>
-                                    <p className="text-sm text-gray-600">
-                                        Les promotions deviennent actives automatiquement à leur date de début
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() =>
-                                        setParametresMetier({
-                                            ...parametresMetier,
-                                            activation_auto_promotions:
-                                                !parametresMetier.activation_auto_promotions,
-                                        })
-                                    }
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${parametresMetier.activation_auto_promotions
-                                            ? 'bg-teal-600'
-                                            : 'bg-gray-300'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${parametresMetier.activation_auto_promotions
-                                                ? 'translate-x-6'
-                                                : 'translate-x-1'
-                                            }`}
-                                    />
-                                </button>
-                            </div>
-
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="font-medium text-gray-900">Affichage prix TTC</p>
-                                    <p className="text-sm text-gray-600">
-                                        Afficher les prix toutes taxes comprises
-                                    </p>
-                                </div>
-                                <button
-                                    onClick={() =>
-                                        setParametresMetier({
-                                            ...parametresMetier,
-                                            affichage_prix_ttc: !parametresMetier.affichage_prix_ttc,
-                                        })
-                                    }
-                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${parametresMetier.affichage_prix_ttc
-                                            ? 'bg-teal-600'
-                                            : 'bg-gray-300'
-                                        }`}
-                                >
-                                    <span
-                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${parametresMetier.affichage_prix_ttc
-                                                ? 'translate-x-6'
-                                                : 'translate-x-1'
-                                            }`}
-                                    />
-                                </button>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={handleSaveMetier}
-                                disabled={loading}
-                                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
-                            >
-                                Enregistrer
-                            </button>
-                        </div>
-                    </div>
+                {/* Bouton Sauvegarder */}
+                <div className="flex justify-end">
+                    <button
+                        onClick={handleSave}
+                        disabled={saving}
+                        className="flex items-center space-x-2 px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <FiSave className="w-5 h-5" />
+                        <span>{saving ? 'Sauvegarde...' : 'Sauvegarder les paramètres'}</span>
+                    </button>
                 </div>
             </div>
         </DashboardLayout>
+    );
+}
+
+// Composant Toggle réutilisable
+function ToggleItem({ label, description, checked, onChange }) {
+    return (
+        <div className="flex items-start justify-between">
+            <div className="flex-1">
+                <h3 className="text-sm font-medium text-gray-900">{label}</h3>
+                <p className="text-sm text-gray-600 mt-0.5">{description}</p>
+            </div>
+            <button
+                type="button"
+                onClick={onChange}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${checked ? 'bg-teal-600' : 'bg-gray-200'
+                    }`}
+            >
+                <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${checked ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                />
+            </button>
+        </div>
     );
 }

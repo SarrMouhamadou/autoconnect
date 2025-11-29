@@ -11,7 +11,8 @@ const clientService = {
      */
     async getMesClients(params = {}) {
         try {
-            const response = await api.get('/clients/mes-clients/', { params });
+            // ✅ NOUVEAU ENDPOINT
+            const response = await api.get('/auth/mes-clients/', { params });
             return response.data;
         } catch (error) {
             throw this.handleError(error);

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import {
   FiHome, FiTruck, FiFileText, FiBarChart2,
-  FiUsers, FiMessageSquare, FiSettings,
+  FiUsers, FiSettings, FiDollarSign,
   FiHelpCircle, FiLogOut, FiSliders
 } from 'react-icons/fi';
 import { FaMapMarkerAlt } from 'react-icons/fa';
@@ -22,9 +22,8 @@ export default function Sidebar({ isOpen, onClose }) {
         { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
         { path: '/my-concessions', icon: FaMapMarkerAlt, label: 'Mes concessions', roles: ['CONCESSIONNAIRE'] },
         { path: '/my-vehicules', icon: FiTruck, label: 'Mes véhicules', roles: ['CONCESSIONNAIRE'] },
-        { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
-        { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['CONCESSIONNAIRE'] },
-        { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
+        { path: '/concessionnaire/locations', icon: FiFileText, label: 'Locations', roles: ['CONCESSIONNAIRE'] },
+        { path: '/concessionnaire/statistiques', icon: FiBarChart2, label: 'Statistiques', roles: ['CONCESSIONNAIRE'] },
       ];
     }
 
@@ -34,7 +33,7 @@ export default function Sidebar({ isOpen, onClose }) {
         { path: '/dashboard', icon: FiHome, label: 'Dashboard', roles: ['all'] },
         { path: '/vehicules', icon: FiTruck, label: 'Catalogue', roles: ['all'] },
         { path: '/my-bookings', icon: FiFileText, label: 'Mes réservations', roles: ['CLIENT'] },
-        { path: '/client/depenses', icon: FiMessageSquare, label: 'Dépenses', roles: ['all'] },
+        { path: '/client/depenses', icon: FiDollarSign, label: 'Dépenses', roles: ['all'] },
       ];
     }
 
@@ -47,7 +46,6 @@ export default function Sidebar({ isOpen, onClose }) {
         { path: '/rentals', icon: FiFileText, label: 'Locations', roles: ['all'] },
         { path: '/analytics', icon: FiBarChart2, label: 'Statistiques', roles: ['ADMINISTRATEUR'] },
         { path: '/dealers', icon: FiUsers, label: 'Concessionnaires', roles: ['ADMINISTRATEUR'] },
-        { path: '/messages', icon: FiMessageSquare, label: 'Messages', roles: ['all'] },
       ];
     }
 
@@ -57,11 +55,23 @@ export default function Sidebar({ isOpen, onClose }) {
 
   const menuItems = getMenuItems();
 
-  const bottomMenuItems = [
-    { path: '/client/profil', icon: FiSettings, label: 'Mon profil' },
-    { path: '/client/parametres', icon: FiSliders, label: 'Préférences' },
-    { path: '/client/aide', icon: FiHelpCircle, label: 'Centre d\'aide' },
-  ];
+  // Menu du bas adapté au rôle
+  const getBottomMenuItems = () => {
+    const basePrefix = user?.type_utilisateur === 'CONCESSIONNAIRE'
+      ? '/concessionnaire'
+      : user?.type_utilisateur === 'ADMINISTRATEUR'
+        ? '/admin'
+        : '/client';
+
+    return [
+      { path: `${basePrefix}/profil`, icon: FiSettings, label: 'Mon profil' },
+      { path: `${basePrefix}/parametres`, icon: FiSliders, label: 'Préférences' },
+      { path: `${basePrefix}/aide`, icon: FiHelpCircle, label: 'Centre d\'aide' },
+    ];
+  };
+
+  const bottomMenuItems = getBottomMenuItems();
+
   const isActive = (path) => location.pathname === path;
 
   const shouldShowItem = (item) => {
@@ -113,8 +123,8 @@ export default function Sidebar({ isOpen, onClose }) {
                 >
                   <div
                     className={`flex items-center space-x-3 px-4 py-3 transition-all relative ${active
-                      ? 'bg-white/10 text-white font-medium'
-                      : 'text-teal-100 hover:bg-white/5 hover:text-white'
+                        ? 'bg-white/10 text-white font-medium'
+                        : 'text-teal-100 hover:bg-white/5 hover:text-white'
                       } rounded-lg`}
                   >
                     <item.icon className={`text-lg ${active ? 'text-white' : 'text-teal-200'}`} />
@@ -141,8 +151,8 @@ export default function Sidebar({ isOpen, onClose }) {
                   to={item.path}
                   onClick={onClose}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all ${active
-                    ? 'bg-white/10 text-white font-medium'
-                    : 'text-teal-100 hover:bg-white/5 hover:text-white'
+                      ? 'bg-white/10 text-white font-medium'
+                      : 'text-teal-100 hover:bg-white/5 hover:text-white'
                     }`}
                 >
                   <item.icon className={`text-lg ${active ? 'text-white' : 'text-teal-200'}`} />

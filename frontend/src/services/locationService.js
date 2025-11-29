@@ -3,6 +3,8 @@ import api from './api';
 /**
  * Service pour gérer les locations via l'API
  * Endpoints: /api/locations/
+ * 
+ * ✅ CORRIGÉ - Endpoints synchronisés avec backend Django
  */
 const locationService = {
   // ========================================
@@ -45,7 +47,7 @@ const locationService = {
    */
   async getMesLocations(params = {}) {
     try {
-      const response = await api.get('/locations/mes_locations/', { params });
+      const response = await api.get('/locations/mes-locations/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -54,11 +56,13 @@ const locationService = {
 
   /**
    * Récupérer mes locations en cours
-   * GET /api/locations/en-cours/
+   * Alias pour compatibilité
    */
   async getMesLocationsEnCours() {
     try {
-      const response = await api.get('/locations/en-cours/');
+      const response = await api.get('/locations/mes-locations/', {
+        params: { statut: 'EN_COURS' }
+      });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -67,11 +71,11 @@ const locationService = {
 
   /**
    * Récupérer l'historique de mes locations
-   * GET /api/locations/historique/
+   * Alias pour compatibilité
    */
   async getHistoriqueLocations(params = {}) {
     try {
-      const response = await api.get('/locations/historique/', { params });
+      const response = await api.get('/locations/mes-locations/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -97,11 +101,11 @@ const locationService = {
 
   /**
    * Annuler une demande de location (si en attente)
-   * POST /api/locations/{id}/annuler/
+   * DELETE /api/locations/{id}/
    */
   async annulerLocation(id, raison = '') {
     try {
-      const response = await api.post(`/locations/${id}/annuler/`, { raison });
+      const response = await api.delete(`/locations/${id}/`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -111,6 +115,7 @@ const locationService = {
   /**
    * Prolonger une location
    * POST /api/locations/{id}/prolonger/
+   * NOTE: À implémenter dans le backend si nécessaire
    */
   async prolongerLocation(id, nouvelleDateFin) {
     try {
@@ -128,12 +133,13 @@ const locationService = {
   // ========================================
 
   /**
-   * Récupérer les locations de mes concessions
-   * GET /api/locations/locations-recues/
+   * ✅ CORRIGÉ: Récupérer les locations gérées par le concessionnaire
+   * GET /api/locations/locations-gerees/
+   * (Avant: locations_recues)
    */
   async getLocationsRecues(params = {}) {
     try {
-      const response = await api.get('/locations/locations-recues/', { params });
+      const response = await api.get('/locations/locations_gerees/', { params });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -141,12 +147,21 @@ const locationService = {
   },
 
   /**
-   * Confirmer une demande de location
-   * POST /api/locations/{id}/confirmer/
+   * Alias pour clarté
+   * GET /api/locations/locations-gerees/
+   */
+  async getLocationsGerees(params = {}) {
+    return this.getLocationsRecues(params);
+  },
+
+  /**
+   * ✅ CORRIGÉ: Confirmer une demande de location
+   * PATCH /api/locations/{id}/confirmer/
+   * (Avant: POST, maintenant PATCH)
    */
   async confirmerLocation(id) {
     try {
-      const response = await api.post(`/locations/${id}/confirmer/`);
+      const response = await api.patch(`/locations/${id}/confirmer/`);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -154,12 +169,13 @@ const locationService = {
   },
 
   /**
-   * Refuser une demande de location
-   * POST /api/locations/{id}/refuser/
+   * ✅ CORRIGÉ: Refuser une demande de location
+   * PATCH /api/locations/{id}/refuser/
+   * (Avant: POST, maintenant PATCH)
    */
   async refuserLocation(id, raison = '') {
     try {
-      const response = await api.post(`/locations/${id}/refuser/`, { raison });
+      const response = await api.patch(`/locations/${id}/refuser/`, { raison });
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -167,12 +183,12 @@ const locationService = {
   },
 
   /**
-   * Enregistrer le départ du véhicule
-   * POST /api/locations/{id}/depart/
+   * ✅ CORRIGÉ: Enregistrer le départ du véhicule
+   * PATCH /api/locations/{id}/enregistrer_depart/
    */
   async enregistrerDepart(id, data) {
     try {
-      const response = await api.post(`/locations/${id}/depart/`, data);
+      const response = await api.patch(`/locations/${id}/enregistrer_depart/`, data);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -180,12 +196,12 @@ const locationService = {
   },
 
   /**
-   * Enregistrer le retour du véhicule
-   * POST /api/locations/{id}/retour/
+   * ✅ CORRIGÉ: Enregistrer le retour du véhicule
+   * PATCH /api/locations/{id}/enregistrer_retour/
    */
   async enregistrerRetour(id, data) {
     try {
-      const response = await api.post(`/locations/${id}/retour/`, data);
+      const response = await api.patch(`/locations/${id}/enregistrer_retour/`, data);
       return response.data;
     } catch (error) {
       throw this.handleError(error);
@@ -193,12 +209,12 @@ const locationService = {
   },
 
   /**
-   * Ajouter des notes concessionnaire
-   * PATCH /api/locations/{id}/notes/
+   * ✅ CORRIGÉ: Ajouter des notes concessionnaire
+   * PATCH /api/locations/{id}/ajouter_notes/
    */
   async ajouterNotes(id, notes) {
     try {
-      const response = await api.patch(`/locations/${id}/notes/`, {
+      const response = await api.patch(`/locations/${id}/ajouter_notes/`, {
         notes_concessionnaire: notes,
       });
       return response.data;
@@ -227,13 +243,14 @@ const locationService = {
   /**
    * Télécharger le contrat PDF
    * GET /api/locations/{id}/telecharger-contrat/
+   * NOTE: À implémenter dans le backend si nécessaire
    */
   async telechargerContrat(id) {
     try {
       const response = await api.get(`/locations/${id}/telecharger-contrat/`, {
         responseType: 'blob',
       });
-      
+
       // Créer un lien de téléchargement
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -243,7 +260,7 @@ const locationService = {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       return true;
     } catch (error) {
       throw this.handleError(error);
@@ -296,7 +313,7 @@ const locationService = {
   // ========================================
 
   /**
-   * Statistiques des locations
+   * ✅ CORRIGÉ: Statistiques des locations
    * GET /api/locations/statistiques/
    */
   async getStatistiques() {

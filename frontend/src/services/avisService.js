@@ -182,12 +182,9 @@ const avisService = {
    * GET /api/avis/avis-recus/
    */
   async getAvisRecus(params = {}) {
-    try {
-      const response = await api.get('/avis/avis-recus/', { params });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
+    // Le backend filtre automatiquement par concessionnaire
+    const response = await api.get('/avis/', { params });
+    return response.data;
   },
 
   /**
@@ -195,14 +192,9 @@ const avisService = {
    * PATCH /api/avis/{id}/repondre/
    */
   async repondreAvis(id, reponse) {
-    try {
-      const response = await api.patch(`/avis/${id}/repondre/`, {
-        reponse_concessionnaire: reponse,
-      });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
+    const response = await api.patch(`/avis/${id}/repondre/`, {
+      reponse: reponse,  // ✅ BON NOM
+    });
   },
 
   /**
@@ -210,14 +202,9 @@ const avisService = {
    * POST /api/avis/{id}/signaler/
    */
   async signalerAvis(id, raison) {
-    try {
-      const response = await api.post(`/avis/${id}/signaler/`, {
-        raison,
-      });
-      return response.data;
-    } catch (error) {
-      throw this.handleError(error);
-    }
+    const response = await api.patch(`/avis/${id}/signaler/`, {  // ✅ PATCH
+      raison,
+    });
   },
 
   // ========================================

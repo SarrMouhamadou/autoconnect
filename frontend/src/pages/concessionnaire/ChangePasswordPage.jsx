@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import Layout from '../../components/layout/Layout';
+import DashboardLayout from '../../components/layout/DashboardLayout';
 import authService from '../../services/authService';
+import { FiArrowLeft, FiEye, FiEyeOff } from 'react-icons/fi';
 
 export default function ChangePasswordPage() {
   const { logout } = useAuth();
@@ -44,7 +45,6 @@ export default function ChangePasswordPage() {
     setError(null);
     setSuccess(false);
 
-    // Validations
     if (!formData.old_password || !formData.new_password || !formData.new_password2) {
       setError('Veuillez remplir tous les champs');
       return;
@@ -76,10 +76,9 @@ export default function ChangePasswordPage() {
 
       setSuccess(true);
 
-      // Déconnecter après 3 secondes et rediriger vers login
       setTimeout(async () => {
         await logout();
-        navigate('/login', { 
+        navigate('/login', {
           state: { message: 'Mot de passe modifié avec succès. Veuillez vous reconnecter.' }
         });
       }, 3000);
@@ -91,12 +90,11 @@ export default function ChangePasswordPage() {
     }
   };
 
-  // Vérification de la force du mot de passe
   const getPasswordStrength = (password) => {
     if (!password) return { strength: 0, label: '', color: '' };
-    
+
     let strength = 0;
-    
+
     if (password.length >= 8) strength++;
     if (password.length >= 12) strength++;
     if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
@@ -112,26 +110,23 @@ export default function ChangePasswordPage() {
   const passwordStrength = getPasswordStrength(formData.new_password);
 
   return (
-    <Layout>
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
+    <DashboardLayout title="Changer mon mot de passe">
+      <div className="max-w-2xl mx-auto">
+        <div className="mb-6">
           <Link
-            to="/profile"
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center mb-4"
+            to="/concessionnaire/profil"
+            className="text-sm text-teal-600 hover:text-teal-700 font-medium flex items-center mb-4"
           >
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+            <FiArrowLeft className="w-4 h-4 mr-1" />
             Retour au profil
           </Link>
-          <h1 className="text-3xl font-bold text-gray-900">Changer mon mot de passe</h1>
-          <p className="mt-2 text-gray-600">
+          <h1 className="text-2xl font-bold text-gray-900">Changer mon mot de passe</h1>
+          <p className="text-gray-600 mt-1">
             Pour votre sécurité, choisissez un mot de passe fort et unique
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="bg-white rounded-lg shadow-md p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Messages */}
             {success && (
@@ -172,7 +167,7 @@ export default function ChangePasswordPage() {
                   required
                   value={formData.old_password}
                   onChange={handleChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="Entrez votre mot de passe actuel"
                 />
                 <button
@@ -180,7 +175,7 @@ export default function ChangePasswordPage() {
                   onClick={() => togglePasswordVisibility('old')}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                 >
-                  {showPasswords.old ? '👁️' : '👁️‍🗨️'}
+                  {showPasswords.old ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -198,7 +193,7 @@ export default function ChangePasswordPage() {
                   required
                   value={formData.new_password}
                   onChange={handleChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="Minimum 8 caractères"
                 />
                 <button
@@ -206,21 +201,20 @@ export default function ChangePasswordPage() {
                   onClick={() => togglePasswordVisibility('new')}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                 >
-                  {showPasswords.new ? '👁️' : '👁️‍🗨️'}
+                  {showPasswords.new ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                 </button>
               </div>
-              
+
               {/* Indicateur de force */}
               {formData.new_password && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs text-gray-500">Force du mot de passe :</span>
-                    <span className={`text-xs font-medium ${
-                      passwordStrength.strength <= 2 ? 'text-red-600' :
-                      passwordStrength.strength <= 3 ? 'text-yellow-600' :
-                      passwordStrength.strength <= 4 ? 'text-blue-600' :
-                      'text-green-600'
-                    }`}>
+                    <span className={`text-xs font-medium ${passwordStrength.strength <= 2 ? 'text-red-600' :
+                        passwordStrength.strength <= 3 ? 'text-yellow-600' :
+                          passwordStrength.strength <= 4 ? 'text-blue-600' :
+                            'text-green-600'
+                      }`}>
                       {passwordStrength.label}
                     </span>
                   </div>
@@ -256,7 +250,7 @@ export default function ChangePasswordPage() {
               </div>
             </div>
 
-            {/* Confirmation nouveau mot de passe */}
+            {/* Confirmation */}
             <div>
               <label htmlFor="new_password2" className="block text-sm font-medium text-gray-700 mb-2">
                 Confirmer le nouveau mot de passe <span className="text-red-500">*</span>
@@ -269,7 +263,7 @@ export default function ChangePasswordPage() {
                   required
                   value={formData.new_password2}
                   onChange={handleChange}
-                  className="block w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="block w-full px-4 py-3 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                   placeholder="Confirmez le nouveau mot de passe"
                 />
                 <button
@@ -277,7 +271,7 @@ export default function ChangePasswordPage() {
                   onClick={() => togglePasswordVisibility('confirm')}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-700"
                 >
-                  {showPasswords.confirm ? '👁️' : '👁️‍🗨️'}
+                  {showPasswords.confirm ? <FiEyeOff className="w-5 h-5" /> : <FiEye className="w-5 h-5" />}
                 </button>
               </div>
               {formData.new_password2 && formData.new_password !== formData.new_password2 && (
@@ -302,7 +296,7 @@ export default function ChangePasswordPage() {
                 <div className="text-sm text-yellow-700">
                   <p className="font-medium">Important</p>
                   <p className="mt-1">
-                    Après avoir changé votre mot de passe, vous serez automatiquement déconnecté et devrez vous reconnecter avec votre nouveau mot de passe.
+                    Après avoir changé votre mot de passe, vous serez automatiquement déconnecté et devrez vous reconnecter.
                   </p>
                 </div>
               </div>
@@ -311,7 +305,7 @@ export default function ChangePasswordPage() {
             {/* Boutons */}
             <div className="flex items-center justify-end space-x-4 pt-4">
               <Link
-                to="/profile"
+                to="/concessionnaire/profil"
                 className="px-6 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
               >
                 Annuler
@@ -319,24 +313,14 @@ export default function ChangePasswordPage() {
               <button
                 type="submit"
                 disabled={loading || success}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                className="px-6 py-3 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
               >
-                {loading ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white inline" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Changement en cours...
-                  </>
-                ) : (
-                  'Changer le mot de passe'
-                )}
+                {loading ? 'Changement en cours...' : 'Changer le mot de passe'}
               </button>
             </div>
           </form>
         </div>
       </div>
-    </Layout>
+    </DashboardLayout>
   );
 }
