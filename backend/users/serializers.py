@@ -35,6 +35,7 @@ class UserSerializer(serializers.ModelSerializer):
             'id', 'email', 'nom', 'prenom', 'telephone', 
             'adresse', 'ville', 'code_postal', 'photo_profil',
             'role', 'type_utilisateur', 
+            'is_superuser', 'is_staff',  # ✅ AJOUTÉ
             'date_inscription', 'derniere_connexion',
             # Champs spécifiques selon le type
             'nom_entreprise', 'siret', 'site_web', 'logo_entreprise',
@@ -54,6 +55,13 @@ class UserSerializer(serializers.ModelSerializer):
         """
         data = super().to_representation(instance)
         
+        # ✅ TOUJOURS inclure ces champs critiques
+        data['type_utilisateur'] = instance.type_utilisateur
+        data['is_superuser'] = instance.is_superuser
+        data['is_staff'] = instance.is_staff
+        if instance.niveau_acces:
+            data['niveau_acces'] = instance.niveau_acces
+        
         # Si c'est un client, supprimer les champs concessionnaire/admin
         if instance.type_utilisateur == 'CLIENT':
             fields_to_remove = [
@@ -65,7 +73,8 @@ class UserSerializer(serializers.ModelSerializer):
         
         # Si c'est un concessionnaire, supprimer les champs admin
         elif instance.type_utilisateur == 'CONCESSIONNAIRE':
-            data.pop('niveau_acces', None)
+            # Ne rien supprimer de critique
+            pass
         
         # Si c'est un admin, supprimer les champs concessionnaire
         elif instance.type_utilisateur == 'ADMINISTRATEUR':
